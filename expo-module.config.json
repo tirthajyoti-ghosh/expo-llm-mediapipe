@@ -1,0 +1,17 @@
+{
+  "platforms": [
+    "apple",
+    "android",
+    "web"
+  ],
+  "apple": {
+    "modules": [
+      "ExpoLlmMediapipeModule"
+    ]
+  },
+  "android": {
+    "modules": [
+      "expo.modules.llmmediapipe.ExpoLlmMediapipeModule"
+    ]
+  }
+}
