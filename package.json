@@ -1,7 +1,7 @@
 {
   "name": "expo-llm-mediapipe",
   "version": "0.1.0",
-  "description": "My new module",
+  "description": "Expo module for Google MediaPipe LLM inference",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
@@ -19,7 +19,10 @@
     "react-native",
     "expo",
     "expo-llm-mediapipe",
-    "ExpoLlmMediapipe"
+    "ExpoLlmMediapipe",
+    "llm",
+    "mediapipe",
+    "gemma"
   ],
   "repository": "https://github.com/tirthajyoti-ghosh/expo-llm-mediapipe",
   "bugs": {
