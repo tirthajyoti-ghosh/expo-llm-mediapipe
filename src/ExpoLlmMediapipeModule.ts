@@ -7,7 +7,9 @@ import type { ExpoLlmMediapipeModuleEvents } from "./ExpoLlmMediapipe.types";
 const module = requireNativeModule("ExpoLlmMediapipe");
 
 // Create an event emitter for handling module events
-const eventEmitter = new EventEmitter<ExpoLlmMediapipeModuleEvents>(module ?? {});
+const eventEmitter = new EventEmitter<ExpoLlmMediapipeModuleEvents>(
+  module ?? {},
+);
 
 // LLM Types and Hook
 type LlmModelLocation =
@@ -102,7 +104,6 @@ export function useLlmInference(config: LlmInferenceConfig) {
       if (modelHandle === undefined) {
         throw new Error("Model handle is not defined");
       }
-
       const requestId = nextRequestIdRef.current++;
 
       const partialSubscription = eventEmitter.addListener(
@@ -147,10 +148,118 @@ export function useLlmInference(config: LlmInferenceConfig) {
     [modelHandle],
   );
 
-  return React.useMemo(
-    () => ({ generateResponse, isLoaded: modelHandle !== undefined }),
-    [generateResponse, modelHandle],
+  // Emits text as it's generated
+  const generateStreamingResponse = React.useCallback(
+    async (
+      prompt: string,
+      onPartial?: (partial: string, requestId: number) => void,
+      onError?: (message: string, requestId: number) => void,
+      abortSignal?: AbortSignal,
+    ): Promise<void> => {
+      if (modelHandle === undefined) {
+        throw new Error("Model handle is not defined");
+      }
+
+      try {
+        await generateStreamingText(
+          modelHandle,
+          prompt,
+          onPartial,
+          onError,
+          abortSignal,
+        );
+      } catch (e) {
+        console.error("Streaming generation error:", e);
+        throw e;
+      }
+    },
+    [modelHandle],
   );
+
+  return React.useMemo(
+    () => ({
+      generateResponse,
+      generateStreamingResponse,
+      isLoaded: modelHandle !== undefined,
+    }),
+    [generateResponse, generateStreamingResponse, modelHandle],
+  );
+}
+
+/**
+ * Generate a streaming text response from the LLM
+ */
+export function generateStreamingText(
+  modelHandle: number,
+  prompt: string,
+  onPartialResponse?: (text: string, requestId: number) => void,
+  onError?: (error: string, requestId: number) => void,
+  abortSignal?: AbortSignal,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!modelHandle) {
+      reject(new Error("Invalid model handle"));
+      return;
+    }
+
+    const requestId = Math.floor(Math.random() * 100000);
+    let fullResponse = "";
+
+    // Set up event listeners for streaming response
+    const partialSubscription = eventEmitter.addListener(
+      "onPartialResponse",
+      (ev: { handle: number; requestId: number; response: string }) => {
+        if (
+          ev.handle === modelHandle &&
+          ev.requestId === requestId &&
+          !(abortSignal?.aborted ?? false)
+        ) {
+          // Call the partial response callback with each chunk
+          if (onPartialResponse) {
+            onPartialResponse(ev.response, ev.requestId);
+          }
+
+          // Build the full response
+          fullResponse += ev.response;
+        }
+      },
+    );
+
+    const errorSubscription = eventEmitter.addListener(
+      "onErrorResponse",
+      (ev: { handle: number; requestId: number; error: string }) => {
+        if (
+          ev.handle === modelHandle &&
+          ev.requestId === requestId &&
+          !(abortSignal?.aborted ?? false)
+        ) {
+          if (onError) {
+            onError(ev.error, ev.requestId);
+          }
+
+          errorSubscription.remove();
+          partialSubscription.remove();
+          reject(new Error(ev.error));
+        }
+      },
+    );
+
+    // Call the native function to start generation
+    module
+      .generateResponseAsync(modelHandle, requestId, prompt)
+      .then(() => {
+        // When complete, clean up listeners and resolve with full response
+        errorSubscription.remove();
+        partialSubscription.remove();
+        resolve();
+      })
+      .catch((error) => {
+        // Clean up listeners on error
+        errorSubscription.remove();
+        partialSubscription.remove();
+        reject(error);
+      });
+  });
 }
 
 export default module;

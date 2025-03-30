@@ -11,6 +11,95 @@ class ExpoLlmMediapipeModule : Module() {
   private var nextHandle = 1
   private val modelMap = mutableMapOf<Int, LlmInferenceModel>()
 
+  // Define these functions at class level, not in the definition block
+  private fun createInferenceListener(modelHandle: Int): InferenceListener {
+    return object : InferenceListener {
+      override fun logging(model: LlmInferenceModel, message: String) {
+        sendEvent("logging", mapOf(
+          "handle" to modelHandle,
+          "message" to message
+        ))
+      }
+      
+      override fun onError(model: LlmInferenceModel, requestId: Int, error: String) {
+        sendEvent("onErrorResponse", mapOf(
+          "handle" to modelHandle,
+          "requestId" to requestId,
+          "error" to error
+        ))
+      }
+      
+      override fun onResults(model: LlmInferenceModel, requestId: Int, response: String) {
+        sendEvent("onPartialResponse", mapOf(
+          "handle" to modelHandle,
+          "requestId" to requestId,
+          "response" to response
+        ))
+      }
+    }
+  }
+  
+  private fun copyFileToInternalStorageIfNeeded(modelName: String, context: Context): File {
+    val outputFile = File(context.filesDir, modelName)
+
+    // Check if the file already exists
+    if (outputFile.exists()) {
+      // The file already exists, no need to copy again
+      sendEvent("logging", mapOf(
+        "message" to "File already exists: ${outputFile.path}, size: ${outputFile.length()}"
+      ))
+      return outputFile
+    }
+
+    try {
+      val assetList = context.assets.list("") ?: arrayOf()
+      sendEvent("logging", mapOf(
+        "message" to "Available assets: ${assetList.joinToString()}"
+      ))
+      
+      if (!assetList.contains(modelName)) {
+        val errorMsg = "Asset file $modelName does not exist in assets"
+        sendEvent("logging", mapOf("message" to errorMsg))
+        throw IllegalArgumentException(errorMsg)
+      }
+
+      sendEvent("logging", mapOf(
+        "message" to "Copying asset $modelName to ${outputFile.path}"
+      ))
+      
+      // File doesn't exist, proceed with copying
+      context.assets.open(modelName).use { inputStream ->
+        FileOutputStream(outputFile).use { outputStream -> 
+          val buffer = ByteArray(1024)
+          var read: Int
+          var total = 0
+          
+          while (inputStream.read(buffer).also { read = it } != -1) {
+            outputStream.write(buffer, 0, read)
+            total += read
+            
+            if (total % (1024 * 1024) == 0) { // Log every MB
+              sendEvent("logging", mapOf(
+                "message" to "Copied $total bytes so far"
+              ))
+            }
+          }
+          
+          sendEvent("logging", mapOf(
+            "message" to "Copied $total bytes total"
+          ))
+        }
+      }
+    } catch (e: Exception) {
+      sendEvent("logging", mapOf(
+        "message" to "Error copying file: ${e.message}"
+      ))
+      throw e
+    }
+
+    return outputFile
+  }
+
   override fun definition() = ModuleDefinition {
     Name("ExpoLlmMediapipe")
 
@@ -157,7 +246,10 @@ class ExpoLlmMediapipeModule : Module() {
                   "requestId" to requestId,
                   "message" to "Generation completed successfully with ${result.length} characters"
                 ))
-                promise.resolve(result)
+                
+                // We don't resolve with the final result here anymore
+                // The client will assemble the full response from streaming events
+                promise.resolve(true)  // Just send success signal
               }
             } catch (e: Exception) {
               sendEvent("logging", mapOf(
@@ -165,7 +257,8 @@ class ExpoLlmMediapipeModule : Module() {
                 "requestId" to requestId,
                 "message" to "Error in async result callback: ${e.message}"
               ))
-              // Do not attempt to resolve/reject promise again if it's already been settled
+              // Only reject if not already settled
+              promise.reject("GENERATION_ERROR", e.message ?: "Unknown error", e)
             }
           }
         } catch (e: Exception) {
@@ -184,93 +277,5 @@ class ExpoLlmMediapipeModule : Module() {
         promise.reject("GENERATION_ERROR", e.message ?: "Unknown error", e)
       }
     }
-  }
-  
-  private fun createInferenceListener(modelHandle: Int): InferenceListener {
-    return object : InferenceListener {
-      override fun logging(model: LlmInferenceModel, message: String) {
-        sendEvent("logging", mapOf(
-          "handle" to modelHandle,
-          "message" to message
-        ))
-      }
-      
-      override fun onError(model: LlmInferenceModel, requestId: Int, error: String) {
-        sendEvent("onErrorResponse", mapOf(
-          "handle" to modelHandle,
-          "requestId" to requestId,
-          "error" to error
-        ))
-      }
-      
-      override fun onResults(model: LlmInferenceModel, requestId: Int, response: String) {
-        sendEvent("onPartialResponse", mapOf(
-          "handle" to modelHandle,
-          "requestId" to requestId,
-          "response" to response
-        ))
-      }
-    }
-  }
-  
-  private fun copyFileToInternalStorageIfNeeded(modelName: String, context: Context): File {
-    val outputFile = File(context.filesDir, modelName)
-
-    // Check if the file already exists
-    if (outputFile.exists()) {
-      // The file already exists, no need to copy again
-      sendEvent("logging", mapOf(
-        "message" to "File already exists: ${outputFile.path}, size: ${outputFile.length()}"
-      ))
-      return outputFile
-    }
-
-    try {
-      val assetList = context.assets.list("") ?: arrayOf()
-      sendEvent("logging", mapOf(
-        "message" to "Available assets: ${assetList.joinToString()}"
-      ))
-      
-      if (!assetList.contains(modelName)) {
-        val errorMsg = "Asset file $modelName does not exist in assets"
-        sendEvent("logging", mapOf("message" to errorMsg))
-        throw IllegalArgumentException(errorMsg)
-      }
-
-      sendEvent("logging", mapOf(
-        "message" to "Copying asset $modelName to ${outputFile.path}"
-      ))
-      
-      // File doesn't exist, proceed with copying
-      context.assets.open(modelName).use { inputStream ->
-        FileOutputStream(outputFile).use { outputStream -> 
-          val buffer = ByteArray(1024)
-          var read: Int
-          var total = 0
-          
-          while (inputStream.read(buffer).also { read = it } != -1) {
-            outputStream.write(buffer, 0, read)
-            total += read
-            
-            if (total % (1024 * 1024) == 0) { // Log every MB
-              sendEvent("logging", mapOf(
-                "message" to "Copied $total bytes so far"
-              ))
-            }
-          }
-          
-          sendEvent("logging", mapOf(
-            "message" to "Copied $total bytes total"
-          ))
-        }
-      }
-    } catch (e: Exception) {
-      sendEvent("logging", mapOf(
-        "message" to "Error copying file: ${e.message}"
-      ))
-      throw e
-    }
-
-    return outputFile
   }
 }

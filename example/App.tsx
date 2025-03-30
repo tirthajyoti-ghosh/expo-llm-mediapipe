@@ -1,5 +1,5 @@
 import ExpoLlmMediapipe from "expo-llm-mediapipe";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   SafeAreaView,
   Text,
@@ -11,6 +11,30 @@ import {
   Platform,
   TextInput,
 } from "react-native";
+
+// Create a simple event listener setup for streaming
+function useModelEvents(
+  modelHandle: number | null,
+  onPartialResponse?: (text: string) => void,
+) {
+  useEffect(() => {
+    if (!modelHandle) return;
+
+    // Listen for partial responses during generation
+    const partialSubscription = ExpoLlmMediapipe.addListener(
+      "onPartialResponse",
+      (event: { handle: number; requestId: number; response: string }) => {
+        if (event.handle === modelHandle && onPartialResponse) {
+          onPartialResponse(event.response);
+        }
+      },
+    );
+
+    return () => {
+      partialSubscription.remove();
+    };
+  }, [modelHandle, onPartialResponse]);
+}
 
 export default function App() {
   const [message, setMessage] = React.useState("Loading...");
@@ -27,6 +51,13 @@ export default function App() {
   );
   const [response, setResponse] = React.useState("");
   const [generating, setGenerating] = React.useState(false);
+
+  // Set up streaming capabilities with our custom hook
+  useModelEvents(modelHandle, (partialText) => {
+    if (generating) {
+      setResponse((prev) => prev + partialText);
+    }
+  });
 
   React.useEffect(() => {
     try {
@@ -154,20 +185,23 @@ export default function App() {
 
     try {
       setGenerating(true);
-      setResponse("");
+      setResponse(""); // Clear previous response
       setLogs((prev) => [
         ...prev,
         `Generating streaming response for prompt: "${prompt.substring(0, 30)}..."`,
       ]);
 
       const requestId = Math.floor(Math.random() * 10000);
-      // Note: This will only complete when the full response is generated
-      // You can use the events to get streaming updates, but uncomment useEvent for that
+
+      // This will trigger streaming through events
+      // Our useModelEvents hook will capture these events and update the UI
       await ExpoLlmMediapipe.generateResponseAsync(
         modelHandle,
         requestId,
         prompt,
       );
+
+      setLogs((prev) => [...prev, "Streaming response completed!"]);
     } catch (e) {
       setLogs((prev) => [
         ...prev,

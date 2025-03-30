@@ -78,7 +78,10 @@ class LlmInferenceModel(
             
             // Define the progress listener for streaming results
             val progressListener = ProgressListener<String> { result, isFinished ->
+                // Send each partial result immediately through the listener
                 inferenceListener?.onResults(this, requestId, result)
+                
+                // Only append to cumulative result and call callback on completion
                 requestResult += result
                 
                 if (isFinished) {
