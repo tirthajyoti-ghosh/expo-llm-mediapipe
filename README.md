@@ -17,7 +17,7 @@ Expo LLM MediaPipe enables Expo/React Native developers to integrate on-device A
 
 ## Installation
 
-```
+```sh
 npx expo install expo-llm-mediapipe
 ```
 
@@ -25,13 +25,25 @@ npx expo install expo-llm-mediapipe
 
 ### Required Configuration
 
-1. Create a development build of your Expo app that includes the native module:
+1. Add the plugin to your `app.json`:
 
+```json
+{
+  "expo": {
+    "plugins": [
+      "expo-llm-mediapipe"
+    ]
+  }
+}
 ```
+
+2. Create a development build of your Expo app that includes the native module:
+
+```sh
 npx expo prebuild
 ```
 
-2. Add LLM model files to your project:
+3. Add LLM model files to your project:
 
 #### Android
 
@@ -40,6 +52,15 @@ Place your .tflite model files in the `android/app/src/main/assets/` directory.
 #### iOS
 
 Add the model files to your Xcode project by dragging them into the Resources group.
+
+### Automatic Configuration (v0.2.0+)
+
+Starting from version 0.2.0, expo-llm-mediapipe includes an Expo Config Plugin that automatically configures your Android project with:
+
+1. The required OpenCL native library references in AndroidManifest.xml
+2. Increased Gradle memory settings for handling large LLM models
+
+These settings will be applied automatically when you run npx expo prebuild as long as you've added the plugin to your app.json.
 
 ### Recommended Models
 

@@ -1,6 +1,10 @@
 // plugins/withLlmMediapipe.js
-const { withAndroidManifest } = require("@expo/config-plugins");
+const {
+  withAndroidManifest,
+  withGradleProperties,
+} = require("@expo/config-plugins");
 
+// Function for handling AndroidManifest.xml changes
 function addNativeLibraries(androidManifest) {
   const { manifest } = androidManifest;
 
@@ -46,9 +50,46 @@ function addNativeLibraries(androidManifest) {
   return androidManifest;
 }
 
+// Function for handling gradle.properties changes
+function addGradleMemorySettings(gradleProperties) {
+  // Find the jvmargs property if it exists
+  const jvmArgsProperty = gradleProperties.find(
+    (prop) => prop.type === "property" && prop.key === "org.gradle.jvmargs",
+  );
+
+  // The JVM args we want to set
+  const desiredJvmArgs = "-Xmx4096m -XX:MaxMetaspaceSize=4096m";
+
+  if (jvmArgsProperty) {
+    // Property exists, update it if needed
+    if (!jvmArgsProperty.value.includes("-Xmx4096m")) {
+      jvmArgsProperty.value += ` ${desiredJvmArgs}`;
+    }
+  } else {
+    // Property doesn't exist, add it
+    gradleProperties.push({
+      type: "property",
+      key: "org.gradle.jvmargs",
+      value: desiredJvmArgs,
+    });
+  }
+
+  return gradleProperties;
+}
+
+// Main plugin function that applies both modifications
 module.exports = function withLlmMediapipe(config) {
-  return withAndroidManifest(config, async (config) => {
+  // First, modify the Android Manifest
+  config = withAndroidManifest(config, async (config) => {
     config.modResults = addNativeLibraries(config.modResults);
     return config;
   });
+
+  // Then, modify Gradle Properties to increase memory
+  config = withGradleProperties(config, (config) => {
+    config.modResults = addGradleMemorySettings(config.modResults);
+    return config;
+  });
+
+  return config;
 };
