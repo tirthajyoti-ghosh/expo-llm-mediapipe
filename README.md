@@ -53,7 +53,7 @@ Place your .tflite model files in the `android/app/src/main/assets/` directory.
 
 Add the model files to your Xcode project by dragging them into the Resources group.
 
-### Automatic Configuration (v0.3.0+)
+### Automatic Configuration (v0.3+)
 
 Starting from version 0.2.0, expo-llm-mediapipe includes an Expo Config Plugin that automatically configures your Android project with:
 
