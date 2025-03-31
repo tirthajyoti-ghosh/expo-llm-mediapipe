@@ -1,6 +1,6 @@
 {
   "name": "expo-llm-mediapipe",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MediaPipe LLM inference for Expo",
   "main": "build/index.js",
   "types": "build/index.d.ts",
