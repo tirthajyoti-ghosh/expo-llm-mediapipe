@@ -1,7 +1,7 @@
 {
   "name": "expo-llm-mediapipe",
-  "version": "0.1.0",
-  "description": "Expo module for Google MediaPipe LLM inference",
+  "version": "0.2.0",
+  "description": "MediaPipe LLM inference for Expo",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
@@ -11,9 +11,14 @@
     "test": "expo-module test",
     "prepare": "expo-module prepare",
     "prepublishOnly": "expo-module prepublishOnly",
-    "expo-module": "expo-module",
-    "open:ios": "xed example/ios",
-    "open:android": "open -a \"Android Studio\" example/android"
+    "expo-module": "expo-module"
+  },
+  "expo": {
+    "name": "expo-llm-mediapipe",
+    "platforms": ["android"],
+    "plugins": [
+      "./plugins/withLlmMediapipe.js"
+    ]
   },
   "keywords": [
     "react-native",
