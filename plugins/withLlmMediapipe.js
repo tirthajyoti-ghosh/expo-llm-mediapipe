@@ -61,8 +61,18 @@ function addGradleMemorySettings(gradleProperties) {
   const desiredJvmArgs = "-Xmx4096m -XX:MaxMetaspaceSize=4096m";
 
   if (jvmArgsProperty) {
-    // Property exists, update it if needed
-    if (!jvmArgsProperty.value.includes("-Xmx4096m")) {
+    // Property exists, replace the Xmx and MaxMetaspaceSize values
+    if (
+      jvmArgsProperty.value.includes("-Xmx") ||
+      jvmArgsProperty.value.includes("MaxMetaspaceSize")
+    ) {
+      // Replace existing memory settings
+      const updatedValue = jvmArgsProperty.value
+        .replace(/-Xmx\d+[mg]/, "-Xmx4096m")
+        .replace(/-XX:MaxMetaspaceSize=\d+[mg]/, "-XX:MaxMetaspaceSize=4096m");
+      jvmArgsProperty.value = updatedValue;
+    } else {
+      // No memory settings found, append our settings
       jvmArgsProperty.value += ` ${desiredJvmArgs}`;
     }
   } else {
