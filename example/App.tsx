@@ -71,7 +71,7 @@ export default function App() {
     }
   }, []);
 
-  const MODEL_NAME = "gemma3-1B-it-int4.task";
+  const MODEL_NAME = "gemma2-2b-it-cpu-int8.task";
 
   // Function to load the model
   const loadModel = async () => {

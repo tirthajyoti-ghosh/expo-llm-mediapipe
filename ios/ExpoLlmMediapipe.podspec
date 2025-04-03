@@ -10,20 +10,16 @@ Pod::Spec.new do |s|
   s.license        = package['license']
   s.author         = package['author']
   s.homepage       = package['homepage']
-  s.platforms      = {
-    :ios => '15.1',
-    :tvos => '15.1'
-  }
+  s.platform       = :ios, '14.0'
   s.swift_version  = '5.4'
   s.source         = { git: 'https://github.com/tirthajyoti-ghosh/expo-llm-mediapipe' }
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
-
-  # Swift/Objective-C compatibility
-  s.pod_target_xcconfig = {
-    'DEFINES_MODULE' => 'YES',
-  }
-
-  s.source_files = "**/*.{h,m,mm,swift,hpp,cpp}"
+  
+  # MediaPipe LLM dependencies - need both
+  s.dependency 'MediaPipeTasksGenAI' 
+  s.dependency 'MediaPipeTasksGenAIC'
+  
+  s.source_files = "*.{swift}"
 end

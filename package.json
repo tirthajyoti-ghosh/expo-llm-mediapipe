@@ -1,7 +1,7 @@
 {
   "name": "expo-llm-mediapipe",
-  "version": "0.3.3",
-  "description": "MediaPipe LLM inference for Expo",
+  "version": "0.4.0",
+  "description": "Expo module for Google MediaPipe LLM inference",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
@@ -47,5 +47,9 @@
     "expo": "*",
     "react": "*",
     "react-native": "*"
+  },
+  "platforms": {
+    "ios": "14.0",
+    "android": "24"
   }
 }
