@@ -55,20 +55,26 @@ Add the model files to your Xcode project by dragging them into the Resources gr
 
 ### Automatic Configuration (v0.3+)
 
-Starting from version 0.2.0, expo-llm-mediapipe includes an Expo Config Plugin that automatically configures your Android project with:
+Starting from version 0.3.0, expo-llm-mediapipe includes an Expo Config Plugin that automatically configures your Android project with:
 
 1. The required OpenCL native library references in AndroidManifest.xml
 2. Increased Gradle memory settings for handling large LLM models
 
 These settings will be applied automatically when you run npx expo prebuild as long as you've added the plugin to your app.json.
 
+## GPU vs. CPU Support
+
+Currently, expo-llm-mediapipe is optimized for CPU-based inference. While the library includes OpenCL native library references for potential GPU support, we recommend using CPU-optimized models for the most reliable performance.
+
 ### Recommended Models
 
-For optimal performance, we recommend using quantized versions of Gemma models:
+For optimal performance, we recommend using quantized CPU-optimized versions of Gemma models:
 
-- gemma-2b-it-int4.task (smallest, fastest)
-- gemma-2b-it-int8.task (balanced)
-- gemma-3b-it-int4.task (more capabilities, slightly larger)
+- **gemma3-1b-it-int4.task** (latest, smallest and fastest)
+- **gemma-2b-it-int4.bin**
+- **gemma-1.1-2b-it-int4.bin**
+
+**Note:** While GPU-optimized models (with `-gpu` in their name) might work on some devices, they are not officially supported at this time and may cause errors related to OpenCL libraries.
 
 You can download these models from [Google's MediaPipe page](https://developers.google.com/mediapipe/solutions/text/llm_inference/knowledgebase#supported-models).
 
