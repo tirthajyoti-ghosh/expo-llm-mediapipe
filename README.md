@@ -81,11 +81,11 @@ android/app/src/main/assets/
 
 Add models to your Xcode project:
 
-1. Open Xcode project (`npx expo run:ios -d`)
-2. Drag model files into the navigator
+1. Open Xcode project (`xed ios`)
+2. Drag model file into the project in the navigator (item with your app name)
 3. ✅ Check "Copy items if needed"
 4. ✅ Select your app target
-5. Verify files appear in "Copy Bundle Resources"
+5. Click on the project again > Go to Build Phases tab > Verify files appear in "Copy Bundle Resources"
 
 </div>
 
@@ -124,7 +124,7 @@ export default function App() {
   // Initialize the LLM
   const llm = useLlmInference({
     storageType: 'asset',
-    modelName: 'gemma-1.1-2b-it-int4.bin', 
+    modelName: 'gemma-1.1-2b-it-cpu-int4.bin', 
     maxTokens: 1024,
     temperature: 0.7,
     topK: 40,
