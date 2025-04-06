@@ -105,7 +105,7 @@ For optimal performance on mobile devices:
 
 ⚠️ **Note:** Gemma3-1b models are not yet supported on iOS. Please use Gemma 2B models for cross-platform compatibility.
 
-Download models from [Google's MediaPipe page](https://developers.google.com/mediapipe/solutions/text/llm_inference/knowledgebase#supported-models).
+Download models from [Kaggle](https://www.kaggle.com/models?query=gemma).
 
 ---
 
