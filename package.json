@@ -17,7 +17,9 @@
   },
   "expo": {
     "name": "expo-llm-mediapipe",
-    "platforms": ["android"],
+    "platforms": [
+      "android"
+    ],
     "plugin": "./app.plugin.js"
   },
   "keywords": [
@@ -36,11 +38,10 @@
   "author": "Tirthajyoti Ghosh <itirthahere@gmail.com> (https://github.com/tirthajyoti-ghosh)",
   "license": "MIT",
   "homepage": "https://github.com/tirthajyoti-ghosh/expo-llm-mediapipe#readme",
-  "dependencies": {},
   "devDependencies": {
     "@types/react": "~18.3.12",
-    "expo-module-scripts": "^4.0.3",
     "expo": "~52.0.0",
+    "expo-module-scripts": "^4.0.3",
     "react-native": "0.76.0"
   },
   "peerDependencies": {

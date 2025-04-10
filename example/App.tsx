@@ -1,5 +1,5 @@
 import ExpoLlmMediapipe from "expo-llm-mediapipe";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   SafeAreaView,
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
   TextInput,
 } from "react-native";
+import Markdown from "react-native-markdown-display";
 
 // Create a simple event listener setup for streaming
 function useModelEvents(
@@ -52,10 +53,20 @@ export default function App() {
   const [response, setResponse] = React.useState("");
   const [generating, setGenerating] = React.useState(false);
 
+  // Add refs for scrolling
+  const responseScrollViewRef = useRef<ScrollView>(null);
+
   // Set up streaming capabilities with our custom hook
   useModelEvents(modelHandle, (partialText) => {
     if (generating) {
-      setResponse((prev) => prev + partialText);
+      setResponse((prev) => {
+        const newResponse = prev + partialText;
+        // Scroll to the bottom after response updates
+        setTimeout(() => {
+          responseScrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 50);
+        return newResponse;
+      });
     }
   });
 
@@ -213,123 +224,127 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <Text style={styles.title}>LLM MediaPipe Test</Text>
-        <Text style={styles.message}>{message}</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <ScrollView ref={responseScrollViewRef} showsVerticalScrollIndicator>
+          <Text style={styles.title}>LLM MediaPipe Test</Text>
+          <Text style={styles.message}>{message}</Text>
 
-        <View style={styles.modelStatus}>
-          <Text>Model Status: </Text>
-          <Text
-            style={{
-              fontWeight: "bold",
-              color:
-                modelState === "loaded"
-                  ? "green"
-                  : modelState === "error"
-                    ? "red"
-                    : modelState === "loading"
-                      ? "orange"
-                      : "gray",
-            }}
-          >
-            {modelState === "not_loaded"
-              ? "Not Loaded"
-              : modelState === "loading"
-                ? "Loading..."
-                : modelState === "loaded"
-                  ? "Loaded ✓"
-                  : "Error Loading"}
-          </Text>
-        </View>
+          <View style={styles.modelStatus}>
+            <Text>Model Status: </Text>
+            <Text
+              style={{
+                fontWeight: "bold",
+                color:
+                  modelState === "loaded"
+                    ? "green"
+                    : modelState === "error"
+                      ? "red"
+                      : modelState === "loading"
+                        ? "orange"
+                        : "gray",
+              }}
+            >
+              {modelState === "not_loaded"
+                ? "Not Loaded"
+                : modelState === "loading"
+                  ? "Loading..."
+                  : modelState === "loaded"
+                    ? "Loaded ✓"
+                    : "Error Loading"}
+            </Text>
+          </View>
 
-        <View style={styles.buttonContainer}>
-          <Button
-            title={modelHandle === null ? "Load Model" : "Reload Model"}
-            onPress={loadModel}
-            disabled={loading || generating}
-          />
-          {modelHandle !== null && (
+          <View style={styles.buttonContainer}>
             <Button
-              title="Release Model"
-              onPress={releaseModel}
+              title={modelHandle === null ? "Load Model" : "Reload Model"}
+              onPress={loadModel}
               disabled={loading || generating}
-              color="red"
             />
-          )}
-        </View>
-
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#0000ff" />
-            <Text style={styles.loadingText}>Processing...</Text>
+            {modelHandle !== null && (
+              <Button
+                title="Release Model"
+                onPress={releaseModel}
+                disabled={loading || generating}
+                color="red"
+              />
+            )}
           </View>
-        )}
 
-        {/* Add text generation UI */}
-        {modelHandle !== null && (
-          <View style={styles.promptContainer}>
-            <Text style={styles.promptLabel}>Enter your prompt:</Text>
-            <TextInput
-              style={styles.promptInput}
-              multiline
-              numberOfLines={4}
-              value={prompt}
-              onChangeText={setPrompt}
-              placeholder="Type your prompt here..."
-              editable={!generating}
-            />
-            <View style={styles.generateButtonsContainer}>
-              <Button
-                title={generating ? "Generating..." : "Generate Response"}
-                onPress={generateResponse}
-                disabled={generating || prompt.trim().length === 0}
-              />
-              <Button
-                title="Stream Response"
-                onPress={generateStreamingResponse}
-                disabled={generating || prompt.trim().length === 0}
-                color="#4CAF50"
-              />
+          {loading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#0000ff" />
+              <Text style={styles.loadingText}>Processing...</Text>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Response section */}
-        {response.length > 0 && (
-          <View style={styles.responseContainer}>
-            <Text style={styles.responseLabel}>Response:</Text>
-            <Text style={styles.responseText}>{response}</Text>
-          </View>
-        )}
+          {/* Add text generation UI */}
+          {modelHandle !== null && (
+            <View style={styles.promptContainer}>
+              <Text style={styles.promptLabel}>Enter your prompt:</Text>
+              <TextInput
+                style={styles.promptInput}
+                multiline
+                numberOfLines={4}
+                value={prompt}
+                onChangeText={setPrompt}
+                placeholder="Type your prompt here..."
+                editable={!generating}
+              />
+              <View style={styles.generateButtonsContainer}>
+                <Button
+                  title={generating ? "Generating..." : "Generate Response"}
+                  onPress={generateResponse}
+                  disabled={generating || prompt.trim().length === 0}
+                />
+                <Button
+                  title="Stream Response"
+                  onPress={generateStreamingResponse}
+                  disabled={generating || prompt.trim().length === 0}
+                  color="#4CAF50"
+                />
+              </View>
+            </View>
+          )}
 
-        {generating && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color="#4CAF50" />
-            <Text style={styles.loadingText}>Generating text...</Text>
-          </View>
-        )}
+          {/* Response section */}
+          {response.length > 0 && (
+            <View style={styles.responseContainer}>
+              <Text style={styles.responseLabel}>Response:</Text>
+              <Markdown style={markdownStyles}>{response}</Markdown>
+            </View>
+          )}
 
-        <View style={styles.logsContainer}>
-          <Text style={styles.logsTitle}>Logs:</Text>
-          {logs.length === 0 ? (
-            <Text style={styles.noLogs}>No logs yet.</Text>
-          ) : (
-            <ScrollView style={styles.logScroll}>
-              {logs.map((log, index) => (
+          {generating && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#4CAF50" />
+              <Text style={styles.loadingText}>Generating text...</Text>
+            </View>
+          )}
+
+          <View style={styles.logsContainer}>
+            <Text style={styles.logsTitle}>Logs:</Text>
+            {logs.length === 0 ? (
+              <Text style={styles.noLogs}>No logs yet.</Text>
+            ) : (
+              logs.map((log, index) => (
                 <Text key={index} style={styles.logEntry}>
                   • {log}
                 </Text>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-      </ScrollView>
+              ))
+            )}
+          </View>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
   container: {
     flex: 1,
     backgroundColor: "#fff",
@@ -404,6 +419,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: "#0055cc",
   },
+  responseScroll: {
+    maxHeight: 350,
+  },
   responseText: {
     fontSize: 16,
     lineHeight: 24,
@@ -433,5 +451,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontStyle: "italic",
     color: "#666",
+  },
+});
+
+const markdownStyles = StyleSheet.create({
+  body: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  heading1: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  heading2: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  code_block: {
+    backgroundColor: "#f0f0f0",
+    padding: 10,
+    borderRadius: 5,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+  },
+  code_inline: {
+    backgroundColor: "#f0f0f0",
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+  },
+  link: {
+    color: "#0066cc",
+    textDecorationLine: "underline",
   },
 });
