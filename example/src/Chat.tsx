@@ -129,20 +129,10 @@ function ChatScreen() {
             >
               <Markdown style={markdownStyles}>
                 {message.text ||
-                  (message.sender === "ai" && generating ? "Thinking..." : "")}
+                  (message.sender === "ai" && generating ? "..." : "")}
               </Markdown>
             </View>
           ))}
-          {generating && (
-            <View style={styles.typingIndicator}>
-              <Text>AI is typing</Text>
-              <ActivityIndicator
-                size="small"
-                color="#4CAF50"
-                style={styles.typingDots}
-              />
-            </View>
-          )}
         </ScrollView>
 
         <View style={styles.inputContainer}>

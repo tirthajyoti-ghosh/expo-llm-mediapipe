@@ -2,7 +2,7 @@ import { Platform, StyleSheet } from "react-native";
 
 const markdownStyles = {
   body: {
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    fontFamily: Platform.OS === "ios" ? "Verdana" : "monospace",
   },
   link: {
     color: "#0066cc",
@@ -152,7 +152,8 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   messageBubble: {
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 2,
     borderRadius: 18,
     maxWidth: "80%",
     marginVertical: 5,
