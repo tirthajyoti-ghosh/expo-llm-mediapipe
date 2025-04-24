@@ -46,6 +46,9 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
+    color: "#1976d2",
+    textAlign: "center",
+    fontWeight: "500",
   },
   promptContainer: {
     backgroundColor: "#f8f8f8",
@@ -199,7 +202,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   disabledButton: {
-    backgroundColor: "#cccccc",
+    opacity: 0.5,
+    backgroundColor: "#999",
   },
   sendButtonText: {
     color: "white",
@@ -373,6 +377,12 @@ const styles = StyleSheet.create({
   },
   downloadPrompt: {
     color: "#0066cc",
+    marginBottom: 10,
+  },
+  loadingBanner: {
+    backgroundColor: "#e3f2fd",
+    padding: 10,
+    borderRadius: 5,
     marginBottom: 10,
   },
 });

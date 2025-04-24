@@ -11,6 +11,12 @@ export interface ModelInfo {
   error?: string;
 }
 
+export interface DownloadOptions {
+  overwrite?: boolean;
+  headers?: Record<string, string>;
+  timeout?: number;
+}
+
 export class ModelManager {
   private models: Map<string, ModelInfo> = new Map();
   private listeners: ((models: Map<string, ModelInfo>) => void)[] = [];
@@ -83,7 +89,10 @@ export class ModelManager {
     }
   }
 
-  public async downloadModel(modelName: string): Promise<boolean> {
+  public async downloadModel(
+    modelName: string,
+    options?: DownloadOptions,
+  ): Promise<boolean> {
     const model = this.models.get(modelName);
     if (!model) {
       throw new Error(`Model ${modelName} is not registered`);
@@ -96,8 +105,18 @@ export class ModelManager {
       this.models.set(modelName, model);
       this.notifyListeners();
 
-      // Start download
-      const result = await ExpoLlmMediapipe.downloadModel(model.url, modelName);
+      // Prepare download options with defaults
+      const downloadOptions = {
+        overwrite: false,
+        ...options,
+      };
+
+      // Start download with options
+      const result = await ExpoLlmMediapipe.downloadModel(
+        model.url,
+        modelName,
+        downloadOptions,
+      );
       return result;
     } catch (error) {
       // Update status to error

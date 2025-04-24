@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import ExpoLlmMediapipe, { modelManager, ModelInfo } from "expo-llm-mediapipe";
-import * as Progress from "expo-progress";
 import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
@@ -10,60 +9,43 @@ import {
   FlatList,
   Alert,
 } from "react-native";
+import * as Progress from "react-native-progress";
 
+import { ModelContext } from "./ModelProvider";
 import { styles } from "./styles";
 
 // Available models for download
 const AVAILABLE_MODELS = [
   {
-    name: "gemma2-2b-it-cpu-int8.task",
-    displayName: "Gemma 2B (Integer 8)",
+    name: "gemma-1.1-2b-it-cpu-int4.bin",
+    displayName: "Gemma 2B (Integer 4)",
     description: "Small, efficient instruction-tuned model (quantized)",
     size: 1200000000, // ~1.2GB
-    url: "https://your-storage-url/models/gemma2-2b-it-cpu-int8.task", // Replace with actual URL
+    url: "https://huggingface.co/t-ghosh/gemma-tflite/resolve/main/gemma-1.1-2b-it-cpu-int4.bin", // Replace with actual URL
   },
-  {
-    name: "gemma2-7b-it-cpu-int8.task",
-    displayName: "Gemma 7B (Integer 8)",
-    description: "Larger capacity instruction-tuned model (quantized)",
-    size: 3800000000, // ~3.8GB
-    url: "https://your-storage-url/models/gemma2-7b-it-cpu-int8.task", // Replace with actual URL
-  },
+  // {
+  //   name: "gemma2-7b-it-cpu-int8.task",
+  //   displayName: "Gemma 7B (Integer 8)",
+  //   description: "Larger capacity instruction-tuned model (quantized)",
+  //   size: 3800000000, // ~3.8GB
+  //   url: "https://your-storage-url/models/gemma2-7b-it-cpu-int8.task", // Replace with actual URL
+  // },
 ];
-
-// Define a model context to share model state across screens
-const ModelContext = React.createContext<{
-  modelHandle: number | null;
-  modelState: "not_loaded" | "loading" | "loaded" | "error";
-  loadModel: (modelPath: string) => Promise<void>;
-  releaseModel: () => Promise<void>;
-  loading: boolean;
-  logs: string[];
-  setLogs: React.Dispatch<React.SetStateAction<string[]>>;
-  currentModelName: string | null;
-  setCurrentModelName: React.Dispatch<React.SetStateAction<string | null>>;
-}>({
-  modelHandle: null,
-  modelState: "not_loaded",
-  loadModel: async () => {},
-  releaseModel: async () => {},
-  loading: false,
-  logs: [],
-  setLogs: () => {},
-  currentModelName: null,
-  setCurrentModelName: () => {},
-});
 
 // Downloads Screen Component
 export default function DownloadsScreen() {
   const {
     modelHandle,
+    modelState,
     loadModel,
+    loadDownloadedModel,
     releaseModel,
     loading,
+    logs,
     setLogs,
+    downloadedModels,
+    refreshDownloadedModels,
     currentModelName,
-    setCurrentModelName,
   } = React.useContext(ModelContext);
 
   const [models, setModels] = useState<ModelInfo[]>([]);
@@ -85,21 +67,47 @@ export default function DownloadsScreen() {
     setModels(modelManager.getAllModels());
 
     // Check downloaded models
-    refreshDownloadedModels();
+    handleRefreshModels();
+
+    // Set up event listener for download progress
+    const subscription = ExpoLlmMediapipe.addListener(
+      "downloadProgress",
+      (event) => {
+        console.log("Download progress:", event);
+        if (event.status === "error") {
+          setLogs((prev) => [
+            ...prev,
+            `Download error: ${event.modelName} - ${event.error}`,
+          ]);
+        }
+      },
+    );
 
     return () => {
       unsubscribe();
+      subscription.remove();
     };
   }, []);
 
-  const refreshDownloadedModels = async () => {
+  // Handle refreshing of models
+  const handleRefreshModels = async () => {
     setRefreshing(true);
     try {
-      const downloadedModels = await ExpoLlmMediapipe.getDownloadedModels();
-      console.log("Downloaded models:", downloadedModels);
-      setRefreshing(false);
+      // Refresh downloaded models from native module
+      const downloadedModelsList = await refreshDownloadedModels();
+
+      // We cannot call private checkModelStatus directly, so we'll re-register models
+      // which will trigger the status check internally
+      const registeredModels = modelManager.getAllModels();
+      for (const model of registeredModels) {
+        modelManager.registerModel(model.name, model.url);
+      }
+
+      setLogs((prev) => [...prev, "Models refreshed"]);
     } catch (error) {
       console.error("Error refreshing models:", error);
+      setLogs((prev) => [...prev, `Error refreshing models: ${error.message}`]);
+    } finally {
       setRefreshing(false);
     }
   };
@@ -107,9 +115,16 @@ export default function DownloadsScreen() {
   const handleDownload = async (model: ModelInfo) => {
     try {
       setLogs((prev) => [...prev, `Starting download of ${model.name}...`]);
-      await modelManager.downloadModel(model.name);
+      await modelManager.downloadModel(model.name, {
+        overwrite: false,
+        timeout: 60000, // 1 minute timeout
+        headers: {
+          // Add any headers needed for your download
+        },
+      });
     } catch (error) {
       console.error(`Error downloading model ${model.name}:`, error);
+      setLogs((prev) => [...prev, `Download error: ${error.message}`]);
       Alert.alert(
         "Download Error",
         `Failed to download model: ${error.message}`,
@@ -123,6 +138,7 @@ export default function DownloadsScreen() {
       setLogs((prev) => [...prev, `Cancelled download of ${model.name}`]);
     } catch (error) {
       console.error(`Error cancelling download for ${model.name}:`, error);
+      setLogs((prev) => [...prev, `Cancel error: ${error.message}`]);
     }
   };
 
@@ -136,27 +152,30 @@ export default function DownloadsScreen() {
       const result = await modelManager.deleteModel(model.name);
       if (result) {
         setLogs((prev) => [...prev, `Deleted model ${model.name}`]);
+        // Refresh downloaded models list after deletion
+        await refreshDownloadedModels();
       } else {
         setLogs((prev) => [...prev, `Failed to delete model ${model.name}`]);
       }
     } catch (error) {
       console.error(`Error deleting model ${model.name}:`, error);
+      setLogs((prev) => [...prev, `Delete error: ${error.message}`]);
       Alert.alert("Delete Error", `Failed to delete model: ${error.message}`);
     }
   };
 
   const handleLoadModel = async (model: ModelInfo) => {
-    if (modelHandle !== null) {
-      // Release current model first
-      await releaseModel();
+    if (loading) {
+      setLogs((prev) => [...prev, "Already loading a model, please wait..."]);
+      return;
     }
 
     try {
       setLogs((prev) => [...prev, `Loading downloaded model ${model.name}...`]);
-      await loadModel(model.name);
-      setCurrentModelName(model.name);
+      await loadDownloadedModel(model.name);
     } catch (error) {
       console.error(`Error loading model ${model.name}:`, error);
+      setLogs((prev) => [...prev, `Load error: ${error.message}`]);
       Alert.alert("Load Error", `Failed to load model: ${error.message}`);
     }
   };
@@ -187,6 +206,15 @@ export default function DownloadsScreen() {
     const isCurrentlyLoaded =
       modelHandle !== null && currentModelName === item.name;
 
+    // Check if the model is in our downloadedModels list from context
+    const isDownloadedInContext = downloadedModels.includes(item.name);
+
+    // Compute the effective status to show in UI, without modifying the model object directly
+    // since we can't access the private updateModelStatus method
+    const displayStatus = isDownloadedInContext && item.status !== "downloading"
+      ? "downloaded"
+      : item.status;
+
     return (
       <View style={styles.modelCard}>
         <View style={styles.modelHeader}>
@@ -201,33 +229,33 @@ export default function DownloadsScreen() {
         <Text style={styles.modelDescription}>{metadata.description}</Text>
         <Text style={styles.modelSize}>Size: {formatSize(metadata.size)}</Text>
 
-        {/* Status indicator */}
+        {/* Status indicator - use displayStatus instead of item.status */}
         <View style={styles.modelStatusContainer}>
           <Text style={styles.modelStatusLabel}>Status: </Text>
           <Text
             style={[
               styles.modelStatusValue,
-              item.status === "downloaded"
+              displayStatus === "downloaded"
                 ? styles.statusDownloaded
-                : item.status === "downloading"
+                : displayStatus === "downloading"
                   ? styles.statusDownloading
-                  : item.status === "error"
+                  : displayStatus === "error"
                     ? styles.statusError
                     : styles.statusNotDownloaded,
             ]}
           >
-            {item.status === "downloaded"
+            {displayStatus === "downloaded"
               ? "Downloaded"
-              : item.status === "downloading"
+              : displayStatus === "downloading"
                 ? "Downloading..."
-                : item.status === "error"
+                : displayStatus === "error"
                   ? "Error"
                   : "Not Downloaded"}
           </Text>
         </View>
 
         {/* Show progress bar for downloading models */}
-        {item.status === "downloading" && (
+        {displayStatus === "downloading" && (
           <View style={styles.progressContainer}>
             <Progress.Bar
               progress={item.progress || 0}
@@ -242,23 +270,24 @@ export default function DownloadsScreen() {
         )}
 
         {/* Show error message if applicable */}
-        {item.status === "error" && (
+        {displayStatus === "error" && (
           <Text style={styles.errorText}>Error: {item.error}</Text>
         )}
 
         <View style={styles.modelActions}>
-          {/* Different buttons depending on status */}
-          {item.status === "not_downloaded" && (
+          {/* Different buttons depending on status - use displayStatus */}
+          {displayStatus === "not_downloaded" && (
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => handleDownload(item)}
+              disabled={loading}
             >
               <Ionicons name="cloud-download-outline" size={18} color="white" />
               <Text style={styles.actionButtonText}>Download</Text>
             </TouchableOpacity>
           )}
 
-          {item.status === "downloading" && (
+          {displayStatus === "downloading" && (
             <TouchableOpacity
               style={[styles.actionButton, styles.cancelButton]}
               onPress={() => handleCancelDownload(item)}
@@ -268,26 +297,35 @@ export default function DownloadsScreen() {
             </TouchableOpacity>
           )}
 
-          {item.status === "downloaded" && (
+          {displayStatus === "downloaded" && (
             <View style={styles.downloadedActions}>
               <TouchableOpacity
                 style={[
                   styles.actionButton,
                   styles.loadButton,
-                  isCurrentlyLoaded && styles.disabledButton,
+                  (isCurrentlyLoaded || loading) && styles.disabledButton,
                 ]}
                 onPress={() => handleLoadModel(item)}
-                disabled={isCurrentlyLoaded}
+                disabled={isCurrentlyLoaded || loading}
               >
                 <Ionicons name="play-outline" size={18} color="white" />
                 <Text style={styles.actionButtonText}>
-                  {isCurrentlyLoaded ? "Active" : "Load"}
+                  {isCurrentlyLoaded
+                    ? "Active"
+                    : loading
+                      ? "Loading..."
+                      : "Load"}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.actionButton, styles.deleteButton]}
+                style={[
+                  styles.actionButton,
+                  styles.deleteButton,
+                  (isCurrentlyLoaded || loading) && styles.disabledButton,
+                ]}
                 onPress={() => handleDeleteModel(item)}
+                disabled={isCurrentlyLoaded || loading}
               >
                 <Ionicons name="trash-outline" size={18} color="white" />
                 <Text style={styles.actionButtonText}>Delete</Text>
@@ -295,10 +333,11 @@ export default function DownloadsScreen() {
             </View>
           )}
 
-          {item.status === "error" && (
+          {displayStatus === "error" && (
             <TouchableOpacity
               style={[styles.actionButton, styles.retryButton]}
               onPress={() => handleDownload(item)}
+              disabled={loading}
             >
               <Ionicons name="refresh-outline" size={18} color="white" />
               <Text style={styles.actionButtonText}>Try Again</Text>
@@ -313,13 +352,20 @@ export default function DownloadsScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Text style={styles.title}>Model Downloads</Text>
+        {loading && (
+          <View style={styles.loadingBanner}>
+            <Text style={styles.loadingText}>
+              Loading model, please wait...
+            </Text>
+          </View>
+        )}
 
         <FlatList
           data={models}
           keyExtractor={(item) => item.name}
           renderItem={renderModelItem}
           contentContainerStyle={styles.modelList}
-          onRefresh={refreshDownloadedModels}
+          onRefresh={handleRefreshModels}
           refreshing={refreshing}
           ListEmptyComponent={
             <View style={styles.emptyStateContainer}>

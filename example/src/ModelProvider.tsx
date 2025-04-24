@@ -1,22 +1,31 @@
 import ExpoLlmMediapipe from "expo-llm-mediapipe";
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 
+// Enhanced context with downloaded models support
 export const ModelContext = React.createContext<{
   modelHandle: number | null;
   modelState: "not_loaded" | "loading" | "loaded" | "error";
-  loadModel: () => Promise<void>;
+  loadModel: (modelName?: string) => Promise<void>;
+  loadDownloadedModel: (modelName: string) => Promise<void>;
   releaseModel: () => Promise<void>;
   loading: boolean;
   logs: string[];
   setLogs: React.Dispatch<React.SetStateAction<string[]>>;
+  downloadedModels: string[];
+  refreshDownloadedModels: () => Promise<void>;
+  currentModelName: string | null;
 }>({
   modelHandle: null,
   modelState: "not_loaded",
   loadModel: async () => {},
+  loadDownloadedModel: async () => {},
   releaseModel: async () => {},
   loading: false,
   logs: [],
   setLogs: () => {},
+  downloadedModels: [],
+  refreshDownloadedModels: async () => {},
+  currentModelName: null,
 });
 
 export const ModelProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -28,37 +37,68 @@ export const ModelProvider: React.FC<{ children: React.ReactNode }> = ({
   const [modelState, setModelState] = React.useState<
     "not_loaded" | "loading" | "loaded" | "error"
   >("not_loaded");
+  const [downloadedModels, setDownloadedModels] = React.useState<string[]>([]);
+  const [currentModelName, setCurrentModelName] = React.useState<string | null>(
+    null,
+  );
 
-  const MODEL_NAME = "gemma2-2b-it-cpu-int8.task";
+  // Default bundled model
+  const DEFAULT_MODEL_NAME = "gemma2-2b-it-cpu-int8.task";
 
-  // Function to load the model
-  const loadModel = async () => {
+  // Refresh the list of downloaded models
+  const refreshDownloadedModels = async () => {
+    try {
+      const models = await ExpoLlmMediapipe.getDownloadedModels();
+      setDownloadedModels(models);
+      return models;
+    } catch (error) {
+      setLogs((prev) => [
+        ...prev,
+        `Error fetching downloaded models: ${error.message}`,
+      ]);
+      return [];
+    }
+  };
+
+  // Initial fetch of downloaded models
+  useEffect(() => {
+    refreshDownloadedModels();
+  }, []);
+
+  // Release the current model if it exists
+  const releaseCurrentModel = async () => {
+    if (modelHandle !== null) {
+      try {
+        await ExpoLlmMediapipe.releaseModel(modelHandle);
+        setLogs((prev) => [...prev, "Previous model released."]);
+      } catch (releaseError) {
+        setLogs((prev) => [
+          ...prev,
+          `Error releasing previous model: ${releaseError.message}`,
+        ]);
+      }
+      setModelHandle(null);
+      setCurrentModelName(null);
+    }
+  };
+
+  // Function to load the model (either default or specified)
+  const loadModel = async (modelName?: string) => {
     if (loading) return;
 
     try {
+      const modelToLoad = modelName || DEFAULT_MODEL_NAME;
       setLoading(true);
       setModelState("loading");
-      setLogs((prev) => [...prev, `Starting to load ${MODEL_NAME}...`]);
+      setLogs((prev) => [...prev, `Starting to load ${modelToLoad}...`]);
 
-      // If we have a previous model handle, release it first
-      if (modelHandle !== null) {
-        try {
-          await ExpoLlmMediapipe.releaseModelAsync(modelHandle);
-          setLogs((prev) => [...prev, "Previous model released."]);
-        } catch (releaseError) {
-          setLogs((prev) => [
-            ...prev,
-            `Error releasing previous model: ${releaseError.message}`,
-          ]);
-        }
-        setModelHandle(null);
-      }
+      // Release any existing model
+      await releaseCurrentModel();
 
-      // Load the new model
-      // Load the new model
+      // Load the model from bundled assets
       const startTime = Date.now();
       const handle = await ExpoLlmMediapipe.createModelFromAsset(
-        MODEL_NAME,
+        modelToLoad,
         1024, // maxTokens
         40, // topK
         0.7, // temperature
@@ -68,13 +108,58 @@ export const ModelProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setModelHandle(handle);
       setModelState("loaded");
+      setCurrentModelName(modelToLoad);
       setLogs((prev) => [
         ...prev,
-        `Model loaded successfully in ${(endTime - startTime) / 1000} seconds. Handle: ${handle}`,
+        `Model ${modelToLoad} loaded successfully in ${(endTime - startTime) / 1000} seconds. Handle: ${handle}`,
       ]);
     } catch (error) {
       setModelState("error");
       setLogs((prev) => [...prev, `Error loading model: ${error.message}`]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to load a downloaded model
+  const loadDownloadedModel = async (modelName: string) => {
+    if (loading) return;
+
+    try {
+      setLoading(true);
+      setModelState("loading");
+      setLogs((prev) => [
+        ...prev,
+        `Starting to load downloaded model ${modelName}...`,
+      ]);
+
+      // Release any existing model
+      await releaseCurrentModel();
+
+      // Load the downloaded model
+      const startTime = Date.now();
+      const handle = await ExpoLlmMediapipe.createModelFromDownloaded(
+        modelName,
+        1024, // maxTokens
+        40, // topK
+        0.7, // temperature
+        42, // randomSeed
+      );
+      const endTime = Date.now();
+
+      setModelHandle(handle);
+      setModelState("loaded");
+      setCurrentModelName(modelName);
+      setLogs((prev) => [
+        ...prev,
+        `Downloaded model ${modelName} loaded successfully in ${(endTime - startTime) / 1000} seconds. Handle: ${handle}`,
+      ]);
+    } catch (error) {
+      setModelState("error");
+      setLogs((prev) => [
+        ...prev,
+        `Error loading downloaded model: ${error.message}`,
+      ]);
     } finally {
       setLoading(false);
     }
@@ -94,6 +179,7 @@ export const ModelProvider: React.FC<{ children: React.ReactNode }> = ({
       await ExpoLlmMediapipe.releaseModel(modelHandle);
 
       setModelHandle(null);
+      setCurrentModelName(null);
       setModelState("not_loaded");
       setLogs((prev) => [...prev, "Model released successfully."]);
     } catch (error) {
@@ -103,15 +189,42 @@ export const ModelProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const modelContextValue = {
-    modelHandle,
-    modelState,
-    loadModel,
-    releaseModel,
-    loading,
-    logs,
-    setLogs,
-  };
+  // Set up event listener for any model loading events
+  useEffect(() => {
+    const subscription = ExpoLlmMediapipe.addListener("logging", (event) => {
+      if (event.message) {
+        setLogs((prev) => [...prev, `Native: ${event.message}`]);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const modelContextValue = useMemo(
+    () => ({
+      modelHandle,
+      modelState,
+      loadModel,
+      loadDownloadedModel,
+      releaseModel,
+      loading,
+      logs,
+      setLogs,
+      downloadedModels,
+      refreshDownloadedModels,
+      currentModelName,
+    }),
+    [
+      modelHandle,
+      modelState,
+      loading,
+      logs,
+      downloadedModels,
+      currentModelName,
+    ],
+  );
 
   return (
     <ModelContext.Provider value={modelContextValue}>
