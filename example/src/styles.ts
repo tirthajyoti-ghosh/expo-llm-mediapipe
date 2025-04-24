@@ -215,6 +215,166 @@ const styles = StyleSheet.create({
   typingDots: {
     marginLeft: 5,
   },
+  noModelContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  noModelTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  noModelText: {
+    textAlign: "center",
+    color: "#666",
+    marginBottom: 20,
+  },
+
+  // Download screen styles
+  modelList: {
+    paddingBottom: 20,
+  },
+  modelCard: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  modelHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  modelName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 5,
+    flex: 1,
+  },
+  modelDescription: {
+    color: "#666",
+    marginBottom: 10,
+  },
+  modelSize: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 10,
+  },
+  modelStatusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  modelStatusLabel: {
+    color: "#666",
+  },
+  modelStatusValue: {
+    fontWeight: "bold",
+  },
+  statusDownloaded: {
+    color: "green",
+  },
+  statusDownloading: {
+    color: "blue",
+  },
+  statusError: {
+    color: "red",
+  },
+  statusNotDownloaded: {
+    color: "#666",
+  },
+  progressContainer: {
+    marginBottom: 15,
+  },
+  progressBar: {
+    marginVertical: 8,
+  },
+  progressText: {
+    textAlign: "right",
+    fontSize: 12,
+    color: "#666",
+  },
+  errorText: {
+    color: "red",
+    marginBottom: 10,
+    fontSize: 12,
+  },
+  modelActions: {
+    marginTop: 10,
+  },
+  downloadedActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0066cc",
+    borderRadius: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  cancelButton: {
+    backgroundColor: "#f44336",
+  },
+  loadButton: {
+    backgroundColor: "#4CAF50",
+    flex: 1,
+    marginRight: 10,
+  },
+  deleteButton: {
+    backgroundColor: "#f44336",
+    flex: 1,
+  },
+  retryButton: {
+    backgroundColor: "#FF9800",
+  },
+  actionButtonText: {
+    color: "white",
+    fontWeight: "500",
+    marginLeft: 5,
+  },
+  emptyStateContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+  },
+  emptyStateText: {
+    marginTop: 10,
+    color: "#888",
+    fontSize: 16,
+  },
+  loadedBadge: {
+    backgroundColor: "#4CAF50",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  loadedBadgeText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  orText: {
+    marginVertical: 10,
+    color: "#666",
+  },
+  downloadPrompt: {
+    color: "#0066cc",
+    marginBottom: 10,
+  },
 });
 
 export { styles, markdownStyles };

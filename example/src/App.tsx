@@ -4,6 +4,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import ChatScreen from "./Chat";
+import DownloadsScreen from "./Download";
 import TestScreen from "./LLMTest";
 import { ModelProvider } from "./ModelProvider";
 
@@ -23,14 +24,27 @@ export default function App() {
                   iconName = focused ? "flask" : "flask-outline";
                 } else if (route.name === "Chat") {
                   iconName = focused ? "chatbubbles" : "chatbubbles-outline";
+                } else if (route.name === "Downloads") {
+                  iconName = focused
+                    ? "cloud-download"
+                    : "cloud-download-outline";
                 }
 
-                return <Ionicons name={iconName} size={size} color={color} />;
+                return (
+                  <Ionicons name={iconName as any} size={size} color={color} />
+                );
               },
               tabBarActiveTintColor: "#0066cc",
               tabBarInactiveTintColor: "gray",
             })}
           >
+            <Tab.Screen
+              name="Downloads"
+              component={DownloadsScreen}
+              options={{
+                title: "Model Library",
+              }}
+            />
             <Tab.Screen
               name="Test"
               component={TestScreen}

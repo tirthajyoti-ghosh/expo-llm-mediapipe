@@ -23,6 +23,50 @@ export type LlmInferenceConfig = LlmModelLocation & {
   randomSeed?: number;
 };
 
+export interface DownloadProgressEvent {
+  modelName: string;
+  url?: string;
+  bytesDownloaded?: number;
+  totalBytes?: number;
+  progress?: number;
+  status: "downloading" | "completed" | "error" | "cancelled";
+  error?: string;
+}
+
+export interface DownloadOptions {
+  overwrite?: boolean;
+  timeout?: number;
+  headers?: Record<string, string>;
+}
+
+export interface ExpoLlmMediapipeModule {
+  // Existing methods...
+
+  // Model download management
+  downloadModel(
+    url: string,
+    modelName: string,
+    options?: DownloadOptions,
+  ): Promise<boolean>;
+  isModelDownloaded(modelName: string): Promise<boolean>;
+  getDownloadedModels(): Promise<string[]>;
+  deleteDownloadedModel(modelName: string): Promise<boolean>;
+  cancelDownload(modelName: string): Promise<boolean>;
+  createModelFromDownloaded(
+    modelName: string,
+    maxTokens?: number,
+    topK?: number,
+    temperature?: number,
+    randomSeed?: number,
+  ): Promise<number>;
+
+  // Events
+  addListener(
+    eventName: string,
+    listener: (event: any) => void,
+  ): typeof EventEmitter;
+}
+
 function getConfigStorageKey(config: LlmInferenceConfig): string {
   if (config.storageType === "asset") {
     return `${config.modelName}`;
