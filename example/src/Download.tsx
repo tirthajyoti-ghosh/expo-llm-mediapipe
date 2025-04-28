@@ -18,18 +18,25 @@ import { styles } from "./styles";
 const AVAILABLE_MODELS = [
   {
     name: "gemma-1.1-2b-it-cpu-int4.bin",
-    displayName: "Gemma 2B (Integer 4)",
-    description: "Small, efficient instruction-tuned model (quantized)",
-    size: 1200000000, // ~1.2GB
+    displayName: "Gemma 1.1 2B (Int 4) [Both Android and iOS]",
+    description: "Instruction-tuned model for CPU (quantized)",
+    size: 1350000000, // ~1.35GB
     url: "https://huggingface.co/t-ghosh/gemma-tflite/resolve/main/gemma-1.1-2b-it-cpu-int4.bin", // Replace with actual URL
   },
-  // {
-  //   name: "gemma2-7b-it-cpu-int8.task",
-  //   displayName: "Gemma 7B (Integer 8)",
-  //   description: "Larger capacity instruction-tuned model (quantized)",
-  //   size: 3800000000, // ~3.8GB
-  //   url: "https://your-storage-url/models/gemma2-7b-it-cpu-int8.task", // Replace with actual URL
-  // },
+  {
+    name: "gemma2-2b-it-cpu-int8.task",
+    displayName: "Gemma 2 2B (Int 8) [Works best on iOS]",
+    description: "Larger capacity instruction-tuned model (quantized)",
+    size: 3200000000, // ~3.2GB
+    url: "https://huggingface.co/t-ghosh/gemma-tflite/resolve/main/gemma2-2b-it-cpu-int8.task",
+  },
+  {
+    name: "gemma3-1B-it-int4.task",
+    displayName: "Gemma 3 1B (Int 4) [Android only]",
+    description: "Latest instruction-tuned model (quantized)",
+    size: 550000000, // ~550MB
+    url: "https://huggingface.co/t-ghosh/gemma-tflite/resolve/main/gemma3-1B-it-int4.task",
+  },
 ];
 
 // Downloads Screen Component
@@ -211,9 +218,10 @@ export default function DownloadsScreen() {
 
     // Compute the effective status to show in UI, without modifying the model object directly
     // since we can't access the private updateModelStatus method
-    const displayStatus = isDownloadedInContext && item.status !== "downloading"
-      ? "downloaded"
-      : item.status;
+    const displayStatus =
+      isDownloadedInContext && item.status !== "downloading"
+        ? "downloaded"
+        : item.status;
 
     return (
       <View style={styles.modelCard}>

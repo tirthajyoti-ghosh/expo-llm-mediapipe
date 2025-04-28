@@ -1,71 +1,21 @@
-import { EventEmitter, requireNativeModule } from "expo-modules-core";
+import { requireNativeModule } from "expo-modules-core";
 import * as React from "react";
 
-import type { ExpoLlmMediapipeModuleEvents } from "./ExpoLlmMediapipe.types";
+import type {
+  LlmInferenceConfig,
+  ExpoLlmMediapipeModule,
+} from "./ExpoLlmMediapipe.types";
 
-// Import the Native Module
-const module = requireNativeModule("ExpoLlmMediapipe");
+/**
+ * This module is a wrapper around the native ExpoLlmMediapipe module.
+ * It provides a React hook for LLM inference and streaming text generation.
+ * The module handles model creation, response generation, and event subscriptions.
+ *
+ * The `useLlmInference` hook manages the lifecycle of the LLM model and provides
+ * functions to generate responses and stream text.
+ */
 
-// Create an event emitter for handling module events
-const eventEmitter = new EventEmitter<ExpoLlmMediapipeModuleEvents>(
-  module ?? {},
-);
-
-// LLM Types and Hook
-type LlmModelLocation =
-  | { storageType: "asset"; modelName: string }
-  | { storageType: "file"; modelPath: string };
-
-export type LlmInferenceConfig = LlmModelLocation & {
-  maxTokens?: number;
-  topK?: number;
-  temperature?: number;
-  randomSeed?: number;
-};
-
-export interface DownloadProgressEvent {
-  modelName: string;
-  url?: string;
-  bytesDownloaded?: number;
-  totalBytes?: number;
-  progress?: number;
-  status: "downloading" | "completed" | "error" | "cancelled";
-  error?: string;
-}
-
-export interface DownloadOptions {
-  overwrite?: boolean;
-  timeout?: number;
-  headers?: Record<string, string>;
-}
-
-export interface ExpoLlmMediapipeModule {
-  // Existing methods...
-
-  // Model download management
-  downloadModel(
-    url: string,
-    modelName: string,
-    options?: DownloadOptions,
-  ): Promise<boolean>;
-  isModelDownloaded(modelName: string): Promise<boolean>;
-  getDownloadedModels(): Promise<string[]>;
-  deleteDownloadedModel(modelName: string): Promise<boolean>;
-  cancelDownload(modelName: string): Promise<boolean>;
-  createModelFromDownloaded(
-    modelName: string,
-    maxTokens?: number,
-    topK?: number,
-    temperature?: number,
-    randomSeed?: number,
-  ): Promise<number>;
-
-  // Events
-  addListener(
-    eventName: string,
-    listener: (event: any) => void,
-  ): typeof EventEmitter;
-}
+const module = requireNativeModule<ExpoLlmMediapipeModule>("ExpoLlmMediapipe");
 
 function getConfigStorageKey(config: LlmInferenceConfig): string {
   if (config.storageType === "asset") {
@@ -73,6 +23,12 @@ function getConfigStorageKey(config: LlmInferenceConfig): string {
   }
   return `${config.modelPath}`;
 }
+
+/**
+ * Hook to manage LLM inference
+ * @param config - Configuration for the LLM model
+ * @returns An object containing the generateResponse and generateStreamingResponse functions
+ */
 
 export function useLlmInference(config: LlmInferenceConfig) {
   const [modelHandle, setModelHandle] = React.useState<number | undefined>();
@@ -150,7 +106,7 @@ export function useLlmInference(config: LlmInferenceConfig) {
       }
       const requestId = nextRequestIdRef.current++;
 
-      const partialSubscription = eventEmitter.addListener(
+      const partialSubscription = module.addListener(
         "onPartialResponse",
         (ev: { handle: number; requestId: number; response: string }) => {
           if (
@@ -164,7 +120,7 @@ export function useLlmInference(config: LlmInferenceConfig) {
         },
       );
 
-      const errorSubscription = eventEmitter.addListener(
+      const errorSubscription = module.addListener(
         "onErrorResponse",
         (ev: { handle: number; requestId: number; error: string }) => {
           if (
@@ -250,7 +206,7 @@ export function generateStreamingText(
     let fullResponse = "";
 
     // Set up event listeners for streaming response
-    const partialSubscription = eventEmitter.addListener(
+    const partialSubscription = module.addListener(
       "onPartialResponse",
       (ev: { handle: number; requestId: number; response: string }) => {
         if (
@@ -269,7 +225,7 @@ export function generateStreamingText(
       },
     );
 
-    const errorSubscription = eventEmitter.addListener(
+    const errorSubscription = module.addListener(
       "onErrorResponse",
       (ev: { handle: number; requestId: number; error: string }) => {
         if (
@@ -307,4 +263,3 @@ export function generateStreamingText(
 }
 
 export default module;
-export { eventEmitter };

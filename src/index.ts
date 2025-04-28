@@ -1,12 +1,10 @@
-// Export the main module
-import ExpoLlmMediapipe from "./ExpoLlmMediapipeModule";
-export default ExpoLlmMediapipe;
-
-// Export types
-export type {
-  DownloadOptions,
-  DownloadProgressEvent,
+import ExpoLlmMediapipe, {
+  generateStreamingText,
+  useLlmInference,
 } from "./ExpoLlmMediapipeModule";
+export default ExpoLlmMediapipe;
+export { generateStreamingText, useLlmInference };
 
-// Export model manager
 export { ModelManager, modelManager, ModelInfo } from "./ModelManager";
+
+export * from "./ExpoLlmMediapipe.types";

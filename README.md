@@ -1,5 +1,3 @@
-# Expo LLM MediaPipe
-
 <div align="center">
   <img src="https://img.shields.io/npm/v/expo-llm-mediapipe.svg?style=flat-square" alt="npm version">
   <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS-blue.svg?style=flat-square" alt="Platform support">
@@ -7,109 +5,154 @@
   <img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License">
 </div>
 
-<p align="center">
-  <b>Run powerful LLMs directly on mobile devices with no server required</b>
-</p>
+# Expo LLM MediaPipe
 
-<p align="center">
-  <img src="./assets/expo-llm-mediapipe.png" width="250" alt="MediaPipe LLM">
-</p>
+Run on-device intelligence without needing a server, with support for streaming generation and download management of LLM models.
 
-A powerful and efficient library for running on-device LLM (Large Language Model) inference in Expo applications using Google's MediaPipe LLM Task API.
+## Features
 
----
+- On-Device Intelligence – Run LLM inference directly on the device (no internet required)
+- Powerful Models – Optimized support for Gemma 2B models with int4/int8 quantization
+- Cross-Platform – Works seamlessly on both iOS and Android
+- Streaming Generation – Token-by-token output for responsive UIs
+- Prompt Engineering – Optimize inputs for better responses
+- Download Management – Download, cancel or delete models on-device
+- Expo Integration – Specially built for the Expo ecosystem
+- React Hooks – Simple, declarative APIs for model lifecycle management
 
-## ✨ Features
-
-- 📱 **On-Device Intelligence** - Run LLM inference directly on-device, no internet connection required
-- 🧠 **Powerful Models** - Support for Gemma 2B models with optimized quantization (int4/int8)
-- 🌉 **Cross-Platform** - Works seamlessly on both iOS and Android
-- 🌊 **Streaming Generation** - Get token-by-token output for responsive UI experiences
-- 💬 **Prompt Engineering** - Format inputs optimally for better model responses
-- 📦 **Expo Integration** - Built specifically for the Expo ecosystem
-- 🪝 **React Hooks** - Easy integration with simple, declarative APIs
-
----
-
-## 📦 Installation
+## Installation
 
 ```sh
 npx expo install expo-llm-mediapipe
 ```
 
-## 🛠 Setup
+## Setup
 
-### Required Configuration
+### Configuration
 
-1️⃣ **Add the plugin to your `app.json`**:
+1. Add the plugin to your app.json:
 
 ```json
-{
-  "expo": {
-    "plugins": [
-      "expo-llm-mediapipe"
-    ]
+   {
+     "expo": {
+       "plugins": [
+         "expo-llm-mediapipe"
+       ]
+     }
+   }
+```
+
+2. Create a development build:
+
+```sh
+   npx expo prebuild
+```
+
+3. Place your model files in your project resources:
+
+   - For Android, copy model files (formats .bin or .task) to:
+
+     android/app/src/main/assets/
+
+   - For iOS, add your model files to your Xcode project ensuring “Copy items if needed” is enabled and that they are added to “Copy Bundle Resources”.
+
+## API Overview
+
+### Model Lifecycle and Inference
+
+Use the `useLlmInference` React hook to create, use, and release models. Here’s an example:
+
+```tsx
+import { useLlmInference } from 'expo-llm-mediapipe';
+
+const llm = useLlmInference({
+  storageType: 'asset',        // 'asset' | 'file'
+  modelName: 'model.task',     // For 'asset' type – specify the filename of the model
+  modelPath: '/path/to/model', // For 'file' type – the location on device
+  maxTokens: 1024,             // Maximum number of tokens in the response
+  temperature: 0.7,            // Value between 0 and 1 for randomness
+  topK: 40,                    // Limits diversity in responses
+  randomSeed: 42               // For reproducible outputs
+});
+```
+
+The hook returns an object with:
+
+- `isLoaded`: Boolean indicating whether the model has been created and is ready.
+- `generateResponse(prompt)`: Generates a complete response for the given prompt.
+- `generateStreamingResponse(prompt)`: Generates token-by-token output via events.
+
+### Download Model Functionality
+
+The package now provides native functionality for model download management. Alongside the existing inference APIs, the module now supports:
+
+- **Download Model** – Downloads a model from a provided URL. It accepts custom options:
+  - **overwrite** (boolean): Replace an existing file.
+  - **timeout** (number): Timeout for the request (in milliseconds).
+  - **headers** (object): Custom headers for the download request.
+- **Event Notifications** – Progress is reported via the “downloadProgress” event. The event payload includes:
+  - `modelName`: Name of the model being downloaded.
+  - `url`: Download URL.
+  - `bytesDownloaded` and `totalBytes`: Current progress information.
+  - `progress`: A fraction (0.0 - 1.0) indicating complete progress.
+  - `status`: One of “downloading”, “completed”, “error”, or “cancelled”.
+  - `error`: An error message if applicable.
+- **Cancel Download** – Cancel an in-progress download.
+- **Delete Downloaded Model** – Remove a downloaded model file.
+- **Get Downloaded Models** – Retrieve a list of downloaded model names.
+
+Example usage for downloading a model:
+
+```tsx
+// Using ModelManager (which wraps the native downloadModel method)
+import { modelManager } from 'expo-llm-mediapipe';
+
+async function downloadMyModel() {
+  try {
+    const success = await modelManager.downloadModel('my-model', {
+      overwrite: true,
+      timeout: 30000,
+      headers: { Authorization: 'Bearer YOUR_TOKEN' },
+    });
+    if (success) {
+      console.log('Download completed successfully!');
+    }
+  } catch (error) {
+    console.error('Download error:', error);
   }
 }
 ```
 
-2️⃣ **Create a development build** of your Expo app:
+### Manual Model Lifecycle
 
-```sh
-npx expo prebuild
+You can also manage model lifecycle manually if preferred:
+
+```tsx
+import ExpoLlmMediapipe from 'expo-llm-mediapipe';
+
+// Create model
+const modelHandle = await ExpoLlmMediapipe.createModelFromAsset(
+  'gemma-2b-it-int4.task',
+  1024,  // maxTokens
+  40,    // topK
+  0.7,   // temperature
+  42     // randomSeed
+);
+
+// Generate text
+const response = await ExpoLlmMediapipe.generateResponse(
+  modelHandle,
+  requestId,
+  'Your prompt here'
+);
+
+// Release model when done
+await ExpoLlmMediapipe.releaseModel(modelHandle);
 ```
 
-3️⃣ **Add LLM model files** to your project:
+## Example Application
 
-<div style="display: flex; gap: 20px;">
-
-<div>
-
-### Android 🤖
-
-Place your model files in the assets directory:
-```
-android/app/src/main/assets/
-```
-- Supports `.bin` and `.task` formats
-
-</div>
-
-<div>
-
-### iOS 🍏
-
-Add models to your Xcode project:
-
-1. Open Xcode project (`xed ios`)
-2. Drag model file into the project in the navigator (item with your app name)
-3. ✅ Check "Copy items if needed"
-4. ✅ Select your app target
-5. Click on the project again > Go to Build Phases tab > Verify files appear in "Copy Bundle Resources"
-
-</div>
-
-</div>
-
----
-
-## 🚀 Recommended Models
-
-For optimal performance on mobile devices:
-
-| Model | Size | Platform | Performance |
-|-------|------|----------|-------------|
-| `gemma-1.1-2b-it-cpu-int4.bin` | ~1GB | iOS/Android | Most reliable |
-| `gemma2-2b-it-cpu-int8.task` | ~3GB | iOS | Best quality |
-| `gemma3-1b-it-int4.task` | ~550MB | Android only | Latest (not for iOS) |
-
-⚠️ **Note:** Gemma3-1b models are not yet supported on iOS. Please use Gemma 2B models for cross-platform compatibility.
-
-Download models from [Kaggle](https://www.kaggle.com/models?query=gemma).
-
----
-
-## 📱 Example Usage
+Below is a sample React Native component using the hook:
 
 ```tsx
 import React, { useState } from 'react';
@@ -124,7 +167,7 @@ export default function App() {
   // Initialize the LLM
   const llm = useLlmInference({
     storageType: 'asset',
-    modelName: 'gemma-1.1-2b-it-cpu-int4.bin', 
+    modelName: 'gemma-1.1-2b-it-cpu-int4.bin',
     maxTokens: 1024,
     temperature: 0.7,
     topK: 40,
@@ -189,158 +232,80 @@ const styles = StyleSheet.create({
 });
 ```
 
----
+### See [`example`](/example/src/) for more reference implementations.
 
-## 🧩 Advanced Usage
+## Recommended Models
 
-<details open>
-<summary><b>Loading from file path</b></summary>
+For optimal performance on mobile devices:
 
-```tsx
-const llm = useLlmInference({
-  storageType: 'file',
-  modelPath: '/path/to/model/on/device.task',
-  maxTokens: 1024,
-  temperature: 0.7,
-  topK: 40,
-  randomSeed: 42
-});
-```
-</details>
+| Model | Size | Platform | Performance |
+|-------|------|----------|-------------|
+| `gemma-1.1-2b-it-cpu-int4.bin` | ~1GB | iOS/Android | Most reliable |
+| `gemma2-2b-it-cpu-int8.task` | ~3GB | iOS | Best quality |
+| `gemma3-1b-it-int4.task` | ~550MB | Android only | Latest (not for iOS) |
 
-<details open>
-<summary><b>Fine-tuning generation parameters</b></summary>
+**Note:** Gemma3-1b models are not yet supported on iOS. Please use Gemma 2B models for cross-platform compatibility.
 
-```tsx
-const llm = useLlmInference({
-  // Higher values (0-1) = more creative but potentially less coherent
-  temperature: 0.9,
-  
-  // Higher values = more diverse outputs
-  topK: 40,
-  
-  // Longer responses (be careful with memory usage)
-  maxTokens: 2048,
-  
-  // Fixed seed for reproducible outputs
-  randomSeed: 123
-});
-```
-</details>
+Download models from [Kaggle](https://www.kaggle.com/models?query=gemma).
 
-<details open>
-<summary><b>Manual model lifecycle management</b></summary>
+## Performance Tips
 
-```tsx
-import ExpoLlmMediapipe from 'expo-llm-mediapipe';
+- Use int4 quantized models for a smaller download size and faster inference.
+- Limit `maxTokens` to only what is needed for your use case.
+- Release model resources when not needed by calling `releaseModel()`.
+- Use streaming responses for improved UI responsiveness.
+- Avoid managing multiple models simultaneously to reduce memory pressure.
 
-// Create model
-const modelHandle = await ExpoLlmMediapipe.createModelFromAsset(
-  'gemma-2b-it-int4.task',
-  1024,  // maxTokens
-  40,    // topK
-  0.7,   // temperature
-  42     // randomSeed
-);
+## Troubleshooting
 
-// Generate text
-const response = await ExpoLlmMediapipe.generateResponse(
-  modelHandle,
-  requestId,
-  prompt
-);
+### iOS Model Loading Issues
 
-// Free resources when done
-await ExpoLlmMediapipe.releaseModel(modelHandle);
-```
-</details>
+- Verify the model is added to the “Copy Bundle Resources” phase.
+- Use only supported model formats (.task or .bin).
+- Check that MediaPipeTasksGenAI pods are correctly installed.
 
----
+### Android Memory Problems
 
-## 📊 Performance Tips
+- Ensure the model size is appropriate for your target devices.
+- Use smaller, quantized models when possible.
+- Enable automatic memory configuration provided by the plugin.
 
-| Tip | Description |
-|-----|-------------|
-| ⚡ Use int4 quantized models | Smaller size, faster inference |
-| 🔢 Limit `maxTokens` | Set only as high as needed |
-| 📱 Release when not in use | Call `releaseModel()` to free memory |
-| 🌊 Use streaming | Better UX for longer responses |
-| 📉 Avoid running multiple models | Can cause memory pressure |
+### Build Errors
 
----
+- Run `npx expo prebuild` after making any plugin changes.
+- Confirm that your iOS deployment target is 14.0+ and Android minSdkVersion is 24+.
 
-## ⚠️ Troubleshooting
-
-<details open>
-<summary><b>iOS Model Loading Issues</b></summary>
-
-- Confirm model is in "Copy Bundle Resources" phase
-- Gemma3-1b models are not supported on iOS
-- Verify both MediaPipeTasksGenAI pods are installed
-- Model format must be `.task` or `.bin`
-</details>
-
-<details open>
-<summary><b>Android Memory Problems</b></summary>
-
-- Check model size is appropriate for target devices
-- Enable automatic memory config via the plugin
-- Use smaller, quantized models when possible
-</details>
-
-<details open>
-<summary><b>Build Errors</b></summary>
-
-- Always use `npx expo prebuild` after plugin changes
-- Ensure iOS deployment target is 14.0+
-- Android minSdkVersion should be 24+
-</details>
-
----
-
-## 📄 API Reference
+## API Reference
 
 ### `useLlmInference(config)`
 
-React hook that manages the model lifecycle and provides methods for text generation.
+- **Parameters:**
+  - `config`: An object conforming to `LlmInferenceConfig` (includes model location, maxTokens, temperature, topK, randomSeed).
+- **Returns:**
+  - An object with:
+    - `isLoaded`: Boolean indicating whether the model is ready.
+    - `generateResponse(prompt, ...)`: Function to generate a complete response.
+    - `generateStreamingResponse(prompt, ...)`: Function to stream responses token-by-token.
 
-```tsx
-const llm = useLlmInference({
-  storageType: 'asset',     // 'asset' | 'file'
-  modelName: 'model.task',  // For 'asset' type
-  modelPath: '/path/file',  // For 'file' type
-  maxTokens: 1024,          // Maximum response length
-  temperature: 0.7,         // Randomness (0-1)
-  topK: 40,                 // Diversity control
-  randomSeed: 42            // Reproducibility
-});
+### Manual Model Lifecycle Management
 
-// Properties & methods
-llm.isLoaded               // Boolean - model ready status
-llm.generateResponse()     // Complete response Promise
-llm.generateStreamingResponse() // Token-by-token streaming
-```
+Refer to the example above for methods like:
 
----
+- `createModelFromAsset`
+- `createModel`
+- `releaseModel`
+- `generateResponse`
+- `generateResponseAsync`
+- `downloadModel`
+- `cancelDownload`
+- `deleteDownloadedModel`
+- `getDownloadedModels`
+- `createModelFromDownloaded`
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! See our Contributing Guide for more details.
 
-## 📜 License
+## License
 
 This project is licensed under the MIT License.
-
----
-
-<div align="center">
-  <p>
-    <a href="https://github.com/tirthajyoti-ghosh/expo-llm-mediapipe/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/tirthajyoti-ghosh/expo-llm-mediapipe/issues">Request Feature</a>
-  </p>
-  
-  <p>
-    Made with ❤️ by <a href="https://twitter.com/terrific_ghosh">Tirtha G</a>
-  </p>
-</div>

@@ -1,6 +1,5 @@
-import ExpoLlmMediapipe, {
-  DownloadProgressEvent,
-} from "./ExpoLlmMediapipeModule";
+import { DownloadProgressEvent } from "./ExpoLlmMediapipe.types";
+import ExpoLlmMediapipe from "./ExpoLlmMediapipeModule";
 
 export interface ModelInfo {
   name: string;
@@ -17,6 +16,11 @@ export interface DownloadOptions {
   timeout?: number;
 }
 
+/**
+ * ModelManager is a singleton class that manages the lifecycle of models.
+ * It handles downloading, deleting, and checking the status of models.
+ * It also provides a way to listen for model status changes.
+ */
 export class ModelManager {
   private models: Map<string, ModelInfo> = new Map();
   private listeners: ((models: Map<string, ModelInfo>) => void)[] = [];
@@ -61,6 +65,11 @@ export class ModelManager {
     }
   };
 
+  /**
+   * Registers a model with the manager.
+   * @param name - The name of the model.
+   * @param url - The URL to download the model from.
+   */
   public registerModel(name: string, url: string): void {
     if (!this.models.has(name)) {
       this.models.set(name, {
@@ -89,6 +98,12 @@ export class ModelManager {
     }
   }
 
+  /**
+   * Downloads a model.
+   * @param modelName - The name of the model to download.
+   * @param options - Optional download options.
+   * @returns A promise that resolves to true if the download was successful.
+   */
   public async downloadModel(
     modelName: string,
     options?: DownloadOptions,
@@ -128,10 +143,20 @@ export class ModelManager {
     }
   }
 
+  /**
+   * Cancels a download in progress.
+   * @param modelName - The name of the model to cancel the download for.
+   * @returns A promise that resolves to true if the cancellation was successful.
+   */
   public async cancelDownload(modelName: string): Promise<boolean> {
     return await ExpoLlmMediapipe.cancelDownload(modelName);
   }
 
+  /**
+   * Deletes a model from the manager.
+   * @param modelName - The name of the model to delete.
+   * @returns A promise that resolves to true if the deletion was successful.
+   */
   public async deleteModel(modelName: string): Promise<boolean> {
     const result = await ExpoLlmMediapipe.deleteDownloadedModel(modelName);
     if (result) {
@@ -146,10 +171,28 @@ export class ModelManager {
     return result;
   }
 
+  /**
+   * Loads a downloaded model.
+   * @param modelName - The name of the model to load.
+   * @param maxTokens - Optional maximum number of tokens for the model.
+   * @param topK - Optional top K value for the model.
+   * @param temperature - Optional temperature value for the model.
+   * @param randomSeed - Optional random seed for the model.
+   * @returns A promise that resolves to the handle of the loaded model.
+   */
   public async getDownloadedModels(): Promise<string[]> {
     return await ExpoLlmMediapipe.getDownloadedModels();
   }
 
+  /**
+   * Loads a downloaded model.
+   * @param modelName - The name of the model to load.
+   * @param maxTokens - Optional maximum number of tokens for the model.
+   * @param topK - Optional top K value for the model.
+   * @param temperature - Optional temperature value for the model.
+   * @param randomSeed - Optional random seed for the model.
+   * @returns A promise that resolves to the handle of the loaded model.
+   */
   public async loadDownloadedModel(
     modelName: string,
     maxTokens?: number,
@@ -166,14 +209,28 @@ export class ModelManager {
     );
   }
 
+  /**
+   * Gets the information of a specific model.
+   * @param modelName - The name of the model to get information about.
+   * @returns The model information or undefined if the model is not found.
+   */
   public getModelInfo(modelName: string): ModelInfo | undefined {
     return this.models.get(modelName);
   }
 
+  /**
+   * Gets all registered models.
+   * @returns An array of all registered models.
+   */
   public getAllModels(): ModelInfo[] {
     return Array.from(this.models.values());
   }
 
+  /**
+   * Adds a listener for model updates.
+   * @param callback - The callback to invoke when models are updated.
+   * @returns A function to unsubscribe the listener.
+   */
   public addListener(
     callback: (models: Map<string, ModelInfo>) => void,
   ): () => void {
@@ -193,6 +250,9 @@ export class ModelManager {
     });
   }
 
+  /**
+   * Cleans up the ModelManager, removing all listeners and subscriptions.
+   */
   public cleanup(): void {
     if (this.downloadSubscription) {
       this.downloadSubscription.remove();
