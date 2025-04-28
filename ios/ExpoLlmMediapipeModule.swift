@@ -24,7 +24,7 @@ public class ExpoLlmMediapipeModule: Module {
   public func definition() -> ModuleDefinition {
     Name("ExpoLlmMediapipe")
 
-    Events("onChange", "onPartialResponse", "onErrorResponse", "logging")
+    Events("downloadProgress", "onChange", "onPartialResponse", "onErrorResponse", "logging")
 
     Function("hello") {
       return "Hello world from MediaPipe LLM on iOS! 👋"
@@ -156,8 +156,120 @@ public class ExpoLlmMediapipeModule: Module {
   }
 
   private func downloadModel(url: String, modelName: String, options: [String: Any]?, promise: Promise) {
-    // You can move this long body into its own helper method if you still hit performance issues
-    // Keeping it here unless splitting is explicitly required again
+      let modelURL = self.getModelURL(modelName: modelName)
+      let overwrite = options?["overwrite"] as? Bool ?? false
+      
+      // Check if already downloading
+      if self.activeDownloads[modelName] != nil {
+        promise.reject("ERR_ALREADY_DOWNLOADING", "This model is already being downloaded")
+        return
+      }
+      
+      // Check if already exists
+      if FileManager.default.fileExists(atPath: modelURL.path) && !overwrite {
+        promise.resolve(true)
+        return
+      }
+      
+      // Create URL session for download
+      guard let downloadURL = URL(string: url) else {
+        promise.reject("ERR_INVALID_URL", "Invalid URL provided")
+        return
+      }
+      
+      var request = URLRequest(url: downloadURL)
+      
+      // Add custom headers if provided
+      if let headers = options?["headers"] as? [String: String] {
+        for (key, value) in headers {
+          request.setValue(value, forHTTPHeaderField: key)
+        }
+      }
+      
+      // Set timeout
+      if let timeout = options?["timeout"] as? TimeInterval {
+        request.timeoutInterval = timeout / 1000.0
+      }
+      
+      // Create download task
+      let session = URLSession(configuration: .default)
+      let task = session.downloadTask(with: request) { (tempURL, response, error) in
+        // Remove from active downloads
+        self.activeDownloads.removeValue(forKey: modelName)
+        self.downloadObservers.removeValue(forKey: modelName)?.invalidate()
+        
+        if let error = error {
+          self.sendEvent("downloadProgress", [
+            "modelName": modelName,
+            "url": url,
+            "status": "error",
+            "error": error.localizedDescription
+          ])
+          promise.reject("ERR_DOWNLOAD", "Download failed: \(error.localizedDescription)")
+          return
+        }
+        
+        guard let tempURL = tempURL else {
+          self.sendEvent("downloadProgress", [
+            "modelName": modelName,
+            "url": url,
+            "status": "error",
+            "error": "No file downloaded"
+          ])
+          promise.reject("ERR_DOWNLOAD", "Download failed: No file received")
+          return
+        }
+        
+        do {
+          // If file already exists, remove it
+          if FileManager.default.fileExists(atPath: modelURL.path) {
+            try FileManager.default.removeItem(at: modelURL)
+          }
+          
+          // Move downloaded file to final location
+          try FileManager.default.moveItem(at: tempURL, to: modelURL)
+          
+          self.sendEvent("downloadProgress", [
+            "modelName": modelName,
+            "url": url,
+            "bytesDownloaded": try FileManager.default.attributesOfItem(atPath: modelURL.path)[.size] as? Int64 ?? 0,
+            "totalBytes": try FileManager.default.attributesOfItem(atPath: modelURL.path)[.size] as? Int64 ?? 0,
+            "progress": 1.0,
+            "status": "completed"
+          ])
+          
+          promise.resolve(true)
+        } catch {
+          self.sendEvent("downloadProgress", [
+            "modelName": modelName,
+            "url": url,
+            "status": "error",
+            "error": error.localizedDescription
+          ])
+          promise.reject("ERR_SAVE_FILE", "Failed to save downloaded model: \(error.localizedDescription)")
+        }
+      }
+      
+      // Observe download progress
+      let observation = task.progress.observe(\.fractionCompleted) { progress, _ in
+        DispatchQueue.main.async {
+          self.sendEvent("downloadProgress", [
+            "modelName": modelName,
+            "url": url,
+            "bytesDownloaded": task.countOfBytesReceived,
+            "totalBytes": task.countOfBytesExpectedToReceive,
+            "progress": progress.fractionCompleted,
+            "status": "downloading"
+          ])
+        }
+      }
+      
+      // Store task and observer
+      self.activeDownloads[modelName] = task
+      self.downloadObservers[modelName] = observation
+      
+      // Start download
+      task.resume()
   }
 
   private func cancelDownload(modelName: String, promise: Promise) {
