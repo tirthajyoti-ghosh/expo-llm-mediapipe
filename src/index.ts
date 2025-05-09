@@ -1,9 +1,9 @@
 import ExpoLlmMediapipe, {
   generateStreamingText,
-  useLlmInference,
+  useLLM,
 } from "./ExpoLlmMediapipeModule";
 export default ExpoLlmMediapipe;
-export { generateStreamingText, useLlmInference };
+export { generateStreamingText, useLLM };
 
 export { ModelManager, modelManager, ModelInfo } from "./ModelManager";
 

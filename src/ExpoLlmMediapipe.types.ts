@@ -59,6 +59,57 @@ export interface DownloadOptions {
   headers?: Record<string, string>;
 }
 
+type BaseLlmParams = {
+  maxTokens?: number;
+  topK?: number;
+  temperature?: number;
+  randomSeed?: number;
+};
+
+/**
+ * Props for the `useLLM` hook.
+ * - If `modelUrl` is provided, `modelName` is also required for downloadable models.
+ * - Otherwise, `storageType` and either `modelName` (for assets) or `modelPath` (for files) are required.
+ */
+// This existing UseLLMProps is a good union type for the implementation signature.
+export type UseLLMProps = BaseLlmParams & (
+  | { modelUrl?: undefined; storageType: "asset"; modelName: string; modelPath?: undefined }
+  | { modelUrl?: undefined; storageType: "file"; modelPath: string; modelName?: undefined }
+  | { modelUrl: string; modelName: string; storageType?: undefined; modelPath?: undefined }
+);
+
+// Specific prop types for hook overloads
+export type UseLLMAssetProps = BaseLlmParams & { modelUrl?: undefined; storageType: "asset"; modelName: string; modelPath?: undefined };
+export type UseLLMFileProps = BaseLlmParams & { modelUrl?: undefined; storageType: "file"; modelPath: string; modelName?: undefined };
+export type UseLLMDownloadableProps = BaseLlmParams & { modelUrl: string; modelName: string; storageType?: undefined; modelPath?: undefined };
+
+
+// Return types for the useLLM hook
+export interface BaseLlmReturn {
+  generateResponse: (
+    promptText: string,
+    onPartial?: (partial: string, reqId: number | undefined) => void,
+    onErrorCb?: (message: string, reqId: number | undefined) => void,
+    abortSignal?: AbortSignal
+  ) => Promise<string>;
+  generateStreamingResponse: (
+    promptText: string,
+    onPartial?: (partial: string, reqId: number) => void,
+    onErrorCb?: (message: string, reqId: number) => void,
+    abortSignal?: AbortSignal
+  ) => Promise<void>;
+  isLoaded: boolean;
+}
+
+export interface DownloadableLlmReturn extends BaseLlmReturn {
+  downloadModel: (options?: DownloadOptions) => Promise<boolean>;
+  loadModel: () => Promise<void>;
+  downloadStatus: "not_downloaded" | "downloading" | "downloaded" | "error";
+  downloadProgress: number;
+  downloadError: string | null;
+  isCheckingStatus: boolean;
+}
+
 export interface NativeModuleSubscription {
   remove(): void;
 }

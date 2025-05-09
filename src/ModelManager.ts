@@ -136,7 +136,7 @@ export class ModelManager {
     } catch (error) {
       // Update status to error
       model.status = "error";
-      model.error = error.message;
+      // model.error = error.message;
       this.models.set(modelName, model);
       this.notifyListeners();
       throw error;
