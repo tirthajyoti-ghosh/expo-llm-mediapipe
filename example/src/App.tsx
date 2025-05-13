@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } fr
 
 import HookDownloadableDemoScreen from './screens/HookDownloadableDemoScreen';
 import HookAssetDemoScreen from './screens/HookAssetDemoScreen';
-// import HooklessDownloadableDemoScreen from './screens/HooklessDownloadableDemoScreen';
-// import HooklessAssetDemoScreen from './screens/HooklessAssetDemoScreen';
-// import HooklessUtilityDemoScreen from './screens/HooklessUtilityDemoScreen';
+import HooklessDownloadableDemoScreen from './screens/HooklessDownloadableDemoScreen';
+import HooklessAssetDemoScreen from './screens/HooklessAssetDemoScreen';
+import HooklessUtilityDemoScreen from './screens/HooklessUtilityDemoScreen';
 
 type DemoScreen =
   | 'HookDownloadable'
@@ -15,7 +15,7 @@ type DemoScreen =
   | 'HooklessUtility';
 
 const App = () => {
-  const [activeScreen, setActiveScreen] = useState<DemoScreen>('HookAsset');
+  const [activeScreen, setActiveScreen] = useState<DemoScreen>('HooklessUtility');
 
   const renderScreen = () => {
     switch (activeScreen) {
@@ -23,12 +23,12 @@ const App = () => {
         return <HookDownloadableDemoScreen />;
       case 'HookAsset':
         return <HookAssetDemoScreen />;
-    //   case 'HooklessDownloadable':
-    //     return <HooklessDownloadableDemoScreen />;
-    //   case 'HooklessAsset':
-    //     return <HooklessAssetDemoScreen />;
-    //   case 'HooklessUtility':
-    //     return <HooklessUtilityDemoScreen />;
+      case 'HooklessDownloadable':
+        return <HooklessDownloadableDemoScreen />;
+      case 'HooklessAsset':
+        return <HooklessAssetDemoScreen />;
+      case 'HooklessUtility':
+        return <HooklessUtilityDemoScreen />;
       default:
         return <Text>Select a demo</Text>;
     }
@@ -50,11 +50,11 @@ const App = () => {
       </View>
       <View style={styles.navContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navScrollView}>
-          <NavButton title="Hook: Downloadable" screen="HookDownloadable" />
-          <NavButton title="Hook: Asset" screen="HookAsset" />
-          <NavButton title="Hookless: Downloadable" screen="HooklessDownloadable" />
-          <NavButton title="Hookless: Asset" screen="HooklessAsset" />
           <NavButton title="Hookless: Utility" screen="HooklessUtility" />
+          <NavButton title="Hookless: Download" screen="HooklessDownloadable" />
+          <NavButton title="Hookless: Asset" screen="HooklessAsset" />
+          <NavButton title="Hook: Asset" screen="HookAsset" />
+          <NavButton title="Hook: Download" screen="HookDownloadable" />
         </ScrollView>
       </View>
       <View style={styles.screenContainer}>{renderScreen()}</View>
