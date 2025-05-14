@@ -14,4 +14,4 @@ We welcome contributions to the **Expo LLM MediaPipe** package! Follow these ste
 
 ## Code of Conduct
 
-Please adhere to our [Code of Conduct](../CODE_OF_CONDUCT.md) when contributing.
+<!-- Please adhere to our [Code of Conduct](../CODE_OF_CONDUCT.md) when contributing. -->

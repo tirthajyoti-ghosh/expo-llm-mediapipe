@@ -38,10 +38,6 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/tirthajyoti-ghosh/expo-llm-mediapipe/edit/main/docs/',
         },
-        blog: {
-          showReadingTime: true,
-          editUrl: 'https://github.com/tirthajyoti-ghosh/expo-llm-mediapipe/edit/main/blog/',
-        },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
@@ -76,8 +72,8 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Introduction',
-                to: '/docs/introduction',
+                label: 'Getting started',
+                to: '/docs/getting-started',
               },
             ],
           },
@@ -101,10 +97,6 @@ const config = {
           {
             title: 'More',
             items: [
-              {
-                label: 'Blog',
-                to: '/blog',
-              },
               {
                 label: 'GitHub',
                 href: 'https://github.com/tirthajyoti-ghosh/expo-llm-mediapipe',
