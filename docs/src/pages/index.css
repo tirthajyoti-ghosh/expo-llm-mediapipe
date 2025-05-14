@@ -23,6 +23,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     border: none;
+    color: #000;
 }
 
 .button-default {
@@ -53,6 +54,7 @@
 
 .hero-button-primary:hover {
     background-color: #f8f8ff;
+    color: #6d4aff;
 }
 
 .hero-button-secondary {
@@ -146,6 +148,10 @@
     border-radius: 0.375rem;
     background-color: #1a1f2c;
     overflow: hidden;
+}
+
+.landing-page pre {
+    background-color: transparent;
 }
 
 .code-pre {
@@ -253,9 +259,9 @@
     align-items: center;
 }
 
-.landing-page .navbar-button {
+/* .landing-page .navbar-button {
     display: none;
-}
+} */
 
 @media (min-width: 640px) {
     .landing-page .navbar-button {
@@ -269,6 +275,13 @@
     background: linear-gradient(to bottom right, #6d4aff, #4a54ff);
     color: white;
     padding: 5rem 1rem;
+}
+
+@media (max-width: 996px) {
+    .hero {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
 }
 
 .hero-container {

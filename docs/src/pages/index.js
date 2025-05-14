@@ -203,7 +203,7 @@ const Index = () => {
       <footer className="footer">
         <div className="footer-container">
           <div className="footer-section">
-            <h3 className="footer-heading">@expo/mediapipe-llm</h3>
+            <h3 className="footer-heading">expo-llm-mediapipe</h3>
             <p className="footer-text">
               Run powerful language models directly on mobile devices.
             </p>
