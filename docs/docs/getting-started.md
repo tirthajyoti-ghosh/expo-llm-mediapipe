@@ -104,9 +104,9 @@ npx expo prebuild
 Here’s a quick example of how to use the package with an asset-based model:
 
 ```tsx
-import { useLlmInference } from 'expo-llm-mediapipe';
+import { useLLM } from 'expo-llm-mediapipe';
 
-const llm = useLlmInference({
+const llm = useLLM({
   storageType: 'asset',
   modelName: 'gemma-1.1-2b-it-cpu-int4.bin',
   maxTokens: 1024,

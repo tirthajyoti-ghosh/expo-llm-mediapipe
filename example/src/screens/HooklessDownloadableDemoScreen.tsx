@@ -103,7 +103,7 @@ const HooklessDownloadableDemoScreen = () => {
     };
   }, []); // Empty dependency array: runs once on mount, cleans up on unmount
 
- useEffect(() => {
+  useEffect(() => {
     // Effect to release model when modelHandle changes (e.g., set to undefined) or on unmount
     const currentModelHandle = modelHandle;
     return () => {
