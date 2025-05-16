@@ -75,7 +75,9 @@ const run = async () => {
 
 ## Demo
 
-<video height="500" src="https://video.twimg.com/amplify_video/1911844223751467008/vid/avc1/720x1178/azC3A2-aCaGPe9cC.mp4?tag=14" controls autoplay loop></video>
+https://github.com/user-attachments/assets/e6073287-59c7-4ead-92ba-2ae98c3ffa97
+
+
 
 ## License
 
